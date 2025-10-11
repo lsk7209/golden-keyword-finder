@@ -1,103 +1,211 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { useState } from 'react';
+import { SearchSection } from '@/components/home/SearchSection';
+import { ResultsGrid } from '@/components/home/ResultsGrid';
+import { SearchOptions, NaverKeyword } from '@/types/keyword';
+import { ApiResponse, SearchKeywordsResponse } from '@/types/api';
+
+export default function HomePage() {
+  const [searchResults, setSearchResults] = useState<NaverKeyword[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isFetchingDocs, setIsFetchingDocs] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSearch = async (options: SearchOptions) => {
+    setIsLoading(true);
+    setError(null);
+    setSearchResults([]);
+
+    try {
+      const response = await fetch('/api/keywords/search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          seedKeywords: options.seedKeywords,
+          showDetail: options.showDetail,
+        }),
+      });
+
+      const result: ApiResponse<SearchKeywordsResponse> = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || '검색에 실패했습니다.');
+      }
+
+      if (result.data) {
+        const naverKeywords: NaverKeyword[] = result.data.keywords.map(k => ({
+          keyword: k.keyword,
+          monthlyPcQcCnt: k.monthlyPcQcCnt.toString(),
+          monthlyMobileQcCnt: k.monthlyMobileQcCnt.toString(),
+          monthlyAvePcClkCnt: k.monthlyAvePcClkCnt.toString(),
+          monthlyAveMobileClkCnt: k.monthlyAveMobileClkCnt.toString(),
+          monthlyAvePcCtr: k.monthlyAvePcCtr.toString(),
+          monthlyAveMobileCtr: k.monthlyAveMobileCtr.toString(),
+          plAvgDepth: k.plAvgDepth.toString(),
+          compIdx: k.compIdx,
+        }));
+
+        setSearchResults(naverKeywords);
+
+        // 자동 문서수 조회 옵션이 켜져있으면
+        if (options.autoFetchDocs) {
+          for (const keyword of naverKeywords) {
+            await handleFetchDocs(keyword.keyword);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('검색 오류:', error);
+      setError(error instanceof Error ? error.message : '검색 중 오류가 발생했습니다.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSave = async (keyword: NaverKeyword) => {
+    setIsSaving(true);
+    try {
+      const response = await fetch('/api/keywords/save', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(keyword),
+      });
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || '저장에 실패했습니다.');
+      }
+
+      console.log('키워드 저장 완료:', result.data);
+    } catch (error) {
+      console.error('저장 오류:', error);
+      throw error;
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleFetchDocs = async (keyword: string) => {
+    setIsFetchingDocs(true);
+    try {
+      const response = await fetch('/api/documents/fetch', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ keyword }),
+      });
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || '문서수 조회에 실패했습니다.');
+      }
+
+      console.log('문서수 조회 완료:', result.data);
+    } catch (error) {
+      console.error('문서수 조회 오류:', error);
+      throw error;
+    } finally {
+      setIsFetchingDocs(false);
+    }
+  };
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 py-8">
+        {/* 헤더 */}
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            🎯 황금키워드 파인더
+          </h1>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            네이버 검색 데이터를 활용하여 검색량은 높지만 경쟁 문서수가 적은 
+            <span className="font-semibold text-blue-600"> 황금키워드</span>를 발굴하세요
+          </p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        {/* 검색 섹션 */}
+        <div className="mb-8">
+          <SearchSection onSearch={handleSearch} isLoading={isLoading} />
+        </div>
+
+        {/* 에러 메시지 */}
+        {error && (
+          <div className="max-w-2xl mx-auto mb-8">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <span className="text-red-400 text-xl">⚠️</span>
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-red-800">오류가 발생했습니다</h3>
+                  <div className="mt-2 text-sm text-red-700">
+                    <p>{error}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 검색 결과 */}
+        {searchResults.length > 0 && (
+          <div className="max-w-7xl mx-auto">
+            <ResultsGrid
+              keywords={searchResults}
+              onSave={handleSave}
+              onFetchDocs={handleFetchDocs}
+              isSaving={isSaving}
+              isFetchingDocs={isFetchingDocs}
+            />
+          </div>
+        )}
+
+        {/* 사용법 안내 */}
+        {searchResults.length === 0 && !isLoading && !error && (
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-white rounded-lg shadow-sm border p-8">
+              <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">
+                🚀 시작하기
+              </h2>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="text-center">
+                  <div className="text-4xl mb-4">🔍</div>
+                  <h3 className="text-lg font-semibold mb-2">1. 키워드 검색</h3>
+                  <p className="text-gray-600 text-sm">
+                    관심 있는 시드 키워드를 입력하고 연관키워드를 찾아보세요
+                  </p>
+                </div>
+                
+                <div className="text-center">
+                  <div className="text-4xl mb-4">📊</div>
+                  <h3 className="text-lg font-semibold mb-2">2. 데이터 분석</h3>
+                  <p className="text-gray-600 text-sm">
+                    검색량, CTR, 경쟁도 등 상세 지표를 확인하세요
+                  </p>
+                </div>
+                
+                <div className="text-center">
+                  <div className="text-4xl mb-4">💎</div>
+                  <h3 className="text-lg font-semibold mb-2">3. 황금키워드 발견</h3>
+                  <p className="text-gray-600 text-sm">
+                    황금점수가 높은 키워드를 저장하고 활용하세요
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        </div>
     </div>
   );
 }

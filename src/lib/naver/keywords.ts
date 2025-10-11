@@ -1,0 +1,131 @@
+import { getSearchAdHeaders, sleep, getBackoffDelay } from './searchad';
+import { NaverKeyword } from '@/types/keyword';
+
+/**
+ * 네이버 API 응답의 수치 데이터 정규화
+ * "< 10" 같은 문자열은 기호 제거 후 숫자 변환
+ */
+export function parseNaverNumber(value: string): number {
+  if (typeof value === 'string') {
+    // "< 10" 같은 문자열 처리
+    if (value.includes('<')) {
+      return parseInt(value.replace(/[<\s]/g, '')) || 0;
+    }
+    return parseInt(value) || 0;
+  }
+  return parseInt(value as string) || 0;
+}
+
+/**
+ * 네이버 API 응답 파싱 및 정규화
+ */
+export function parseKeywordResults(data: any): NaverKeyword[] {
+  if (!data.keywordList || !Array.isArray(data.keywordList)) {
+    return [];
+  }
+
+  return data.keywordList.map((item: any) => ({
+    keyword: item.relKeyword || '',
+    monthlyPcQcCnt: item.monthlyPcQcCnt || '0',
+    monthlyMobileQcCnt: item.monthlyMobileQcCnt || '0',
+    monthlyAvePcClkCnt: item.monthlyAvePcClkCnt || '0',
+    monthlyAveMobileClkCnt: item.monthlyAveMobileClkCnt || '0',
+    monthlyAvePcCtr: item.monthlyAvePcCtr || '0',
+    monthlyAveMobileCtr: item.monthlyAveMobileCtr || '0',
+    plAvgDepth: item.plAvgDepth || '0',
+    compIdx: item.compIdx || '낮음',
+  }));
+}
+
+/**
+ * 단일 배치 키워드 검색 (최대 5개)
+ */
+async function searchKeywordsBatch(
+  seedKeywords: string[], 
+  showDetail = true,
+  attempt = 1
+): Promise<NaverKeyword[]> {
+  const uri = '/keywordstool';
+  const params = new URLSearchParams({
+    hintKeywords: seedKeywords.join(','),
+    showDetail: showDetail ? '1' : '0',
+  });
+  
+  try {
+    const response = await fetch(
+      `${process.env.SEARCHAD_BASE_URL}${uri}?${params}`,
+      {
+        method: 'GET',
+        headers: getSearchAdHeaders('GET', uri),
+      }
+    );
+    
+    if (response.status === 429) {
+      // RelKwdStat는 타 오퍼레이션 대비 호출 속도가 1/5~1/6 수준으로 제한
+      const delay = getBackoffDelay(attempt);
+      console.warn(`Rate limit hit, waiting ${delay}ms before retry (attempt ${attempt})`);
+      await sleep(delay);
+      
+      if (attempt >= 3) {
+        throw new Error('Rate limit exceeded. Please try again after 5 minutes.');
+      }
+      
+      return searchKeywordsBatch(seedKeywords, showDetail, attempt + 1);
+    }
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`네이버 API 오류: ${response.status} ${response.statusText} - ${errorText}`);
+    }
+    
+    const data = await response.json();
+    return parseKeywordResults(data);
+    
+  } catch (error) {
+    if (attempt >= 3) {
+      throw error;
+    }
+    
+    // 네트워크 오류 등으로 인한 재시도
+    const delay = getBackoffDelay(attempt);
+    console.warn(`Request failed, retrying in ${delay}ms (attempt ${attempt})`);
+    await sleep(delay);
+    return searchKeywordsBatch(seedKeywords, showDetail, attempt + 1);
+  }
+}
+
+/**
+ * 다중 키워드 검색 (5개 단위 배치 처리)
+ * hintKeywords 최대 5개/호출 → 다량 키워드는 5개 단위 배치로 병렬/직렬 처리
+ */
+export async function searchKeywords(seedKeywords: string[], showDetail = true): Promise<NaverKeyword[]> {
+  if (seedKeywords.length === 0) {
+    return [];
+  }
+
+  // 5개 단위로 청크 분할
+  const chunks: string[][] = [];
+  for (let i = 0; i < seedKeywords.length; i += 5) {
+    chunks.push(seedKeywords.slice(i, i + 5));
+  }
+
+  const results: NaverKeyword[] = [];
+  
+  // RelKwdStat는 속도 제한이 엄격하므로 순차 처리
+  for (const chunk of chunks) {
+    try {
+      const chunkResults = await searchKeywordsBatch(chunk, showDetail);
+      results.push(...chunkResults);
+      
+      // 청크 간 간격 (속도 제한 고려)
+      if (chunks.length > 1) {
+        await sleep(1000); // 1초 간격
+      }
+    } catch (error) {
+      console.error(`Failed to process chunk: ${chunk.join(', ')}`, error);
+      // 개별 청크 실패 시에도 다른 청크는 계속 처리
+    }
+  }
+
+  return results;
+}

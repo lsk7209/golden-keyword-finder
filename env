@@ -1,0 +1,14 @@
+# Supabase 설정
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+
+# 네이버 검색광고 API
+SEARCHAD_API_KEY=your_access_license
+SEARCHAD_SECRET=your_secret_key
+SEARCHAD_CUSTOMER_ID=your_customer_id
+SEARCHAD_BASE_URL=https://api.naver.com
+
+# 네이버 오픈 API
+NAVER_CLIENT_ID=your_client_id
+NAVER_CLIENT_SECRET=your_client_secret
+NAVER_OPENAPI_BASE_URL=https://openapi.naver.com
