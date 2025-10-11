@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { NaverKeyword } from '@/types/keyword';
-import { formatNumber, getCompetitionColor, parseNaverNumber } from '@/lib/utils';
+import { formatNumber, getCompetitionColor } from '@/lib/utils';
+import { parseNaverNumber } from '@/lib/naver/keywords';
 
 interface KeywordCardProps {
   keyword: NaverKeyword;
