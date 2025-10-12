@@ -29,6 +29,7 @@ export async function POST(request: NextRequest) {
       // 업데이트
       const { data, error } = await supabase
         .from('keywords')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .update({
           monthly_pc_qc_cnt: parseNaverNumber(keywordData.monthlyPcQcCnt),
           monthly_mobile_qc_cnt: parseNaverNumber(keywordData.monthlyMobileQcCnt),
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest) {
           pl_avg_depth: parseNaverNumber(keywordData.plAvgDepth),
           comp_idx: keywordData.compIdx as '낮음' | '중간' | '높음',
           updated_at: now,
-        } as Record<string, unknown>)
+        } as any)
         .eq('id', existing.id)
         .select()
         .single();
@@ -56,6 +57,7 @@ export async function POST(request: NextRequest) {
       // 새로 삽입
       const { data, error } = await supabase
         .from('keywords')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .insert({
           keyword: keywordData.keyword,
           monthly_pc_qc_cnt: parseNaverNumber(keywordData.monthlyPcQcCnt),
@@ -74,7 +76,7 @@ export async function POST(request: NextRequest) {
           is_favorite: false,
           created_at: now,
           updated_at: now,
-        } as Record<string, unknown>)
+        } as any)
         .select()
         .single();
 

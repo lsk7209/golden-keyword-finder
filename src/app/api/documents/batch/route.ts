@@ -41,13 +41,14 @@ export async function POST(request: NextRequest) {
       if (existing) {
         const { error } = await supabase
           .from('keywords')
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           .update({
             blog_count: result.blogCount,
             cafe_count: result.cafeCount,
             web_count: result.webCount,
             news_count: result.newsCount,
             last_checked_at: new Date().toISOString(),
-          } as Record<string, unknown>)
+          } as any)
           .eq('id', existing.id);
 
         if (error) {
