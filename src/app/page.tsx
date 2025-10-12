@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { SearchSection } from '@/components/home/SearchSection';
-import { ResultsGrid } from '@/components/home/ResultsGrid';
+import { KeywordTable } from '@/components/home/KeywordTable';
 import { SearchOptions, NaverKeyword } from '@/types/keyword';
 import { ApiResponse, SearchKeywordsResponse } from '@/types/api';
 
@@ -50,6 +50,19 @@ export default function HomePage() {
         }));
 
         setSearchResults(naverKeywords);
+
+        // 검색된 연관키워드를 자동으로 데이터베이스에 저장
+        console.log('연관키워드 자동 저장 시작...');
+        for (const keyword of naverKeywords) {
+          try {
+            await handleSave(keyword);
+            console.log(`키워드 저장 완료: ${keyword.keyword}`);
+          } catch (error) {
+            console.error(`키워드 저장 실패: ${keyword.keyword}`, error);
+            // 개별 키워드 저장 실패는 전체 프로세스를 중단하지 않음
+          }
+        }
+        console.log('연관키워드 자동 저장 완료');
 
         // 자동 문서수 조회 옵션이 켜져있으면
         if (options.autoFetchDocs) {
@@ -159,7 +172,7 @@ export default function HomePage() {
         {/* 검색 결과 */}
         {searchResults.length > 0 && (
           <div className="max-w-7xl mx-auto">
-            <ResultsGrid
+            <KeywordTable
               keywords={searchResults}
               onSave={handleSave}
               onFetchDocs={handleFetchDocs}
@@ -187,10 +200,10 @@ export default function HomePage() {
                 </div>
                 
                 <div className="text-center">
-                  <div className="text-4xl mb-4">📊</div>
-                  <h3 className="text-lg font-semibold mb-2">2. 데이터 분석</h3>
+                  <div className="text-4xl mb-4">💾</div>
+                  <h3 className="text-lg font-semibold mb-2">2. 자동 저장</h3>
                   <p className="text-gray-600 text-sm">
-                    검색량, CTR, 경쟁도 등 상세 지표를 확인하세요
+                    검색된 연관키워드가 자동으로 데이터베이스에 저장됩니다
                   </p>
                 </div>
                 
@@ -198,7 +211,7 @@ export default function HomePage() {
                   <div className="text-4xl mb-4">💎</div>
                   <h3 className="text-lg font-semibold mb-2">3. 황금키워드 발견</h3>
                   <p className="text-gray-600 text-sm">
-                    황금점수가 높은 키워드를 저장하고 활용하세요
+                    데이터 메뉴에서 황금점수가 높은 키워드를 찾아보세요
                   </p>
                 </div>
               </div>
