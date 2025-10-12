@@ -52,7 +52,8 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        data: { id: data.id, action: 'updated' },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        data: { id: (data as any).id, action: 'updated' },
       });
     } else {
       // 새로 삽입
@@ -87,7 +88,8 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        data: { id: data.id, action: 'created' },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        data: { id: (data as any).id, action: 'created' },
       });
     }
 
