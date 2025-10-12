@@ -55,6 +55,7 @@ export async function POST() {
       console.log('기존 키워드 업데이트 시도...');
       const { data, error } = await supabase
         .from('keywords')
+        // @ts-expect-error - Supabase 타입 정의 문제로 인한 임시 해결
         .update({
           monthly_pc_qc_cnt: testData.monthly_pc_qc_cnt,
           monthly_mobile_qc_cnt: testData.monthly_mobile_qc_cnt,
@@ -84,6 +85,7 @@ export async function POST() {
       console.log('새 키워드 삽입 시도...');
       const { data, error } = await supabase
         .from('keywords')
+        // @ts-expect-error - Supabase 타입 정의 문제로 인한 임시 해결
         .insert(testData)
         .select()
         .single();
