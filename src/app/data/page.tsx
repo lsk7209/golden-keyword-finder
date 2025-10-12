@@ -96,7 +96,7 @@ export default function DataPage() {
     } finally {
       setLoading(false);
     }
-  }, []); // 의존성 배열을 비워서 함수 재생성 방지
+  }, [setKeywords, setLoading]); // 의존성 배열에 필요한 함수들 추가
 
   const fetchStats = useCallback(async () => {
     try {
@@ -109,12 +109,12 @@ export default function DataPage() {
     } catch (error) {
       console.error('통계 조회 오류:', error);
     }
-  }, []);
+  }, [setStats]);
 
   useEffect(() => {
     fetchKeywords();
     fetchStats();
-  }, []); // 의존성 배열을 비워서 초기 로드 시에만 실행
+  }, [fetchKeywords, fetchStats]); // 의존성 배열에 함수들 추가
 
   // 자동 새로고침 기능
   useEffect(() => {
@@ -136,7 +136,7 @@ export default function DataPage() {
         clearInterval(autoRefreshInterval.current);
       }
     };
-  }, [isAutoRefresh]); // fetchKeywords, fetchStats 의존성 제거
+  }, [isAutoRefresh, fetchKeywords, fetchStats]); // 의존성 배열에 함수들 추가
 
   const handleBulkDelete = async () => {
     if (selectedIds.length === 0) return;

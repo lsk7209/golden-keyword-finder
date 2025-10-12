@@ -100,9 +100,8 @@ export async function POST(request: NextRequest) {
       console.log('키워드 업데이트 성공:', data);
       return NextResponse.json({
         success: true,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         data: { 
-          id: (data as any).id, 
+          id: (data as { id: string }).id, 
           action: 'updated',
           documentCounts,
           apiUsage: {
@@ -147,9 +146,8 @@ export async function POST(request: NextRequest) {
       console.log('키워드 삽입 성공:', data);
       return NextResponse.json({
         success: true,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         data: { 
-          id: (data as any).id, 
+          id: (data as { id: string }).id, 
           action: 'created',
           documentCounts,
           apiUsage: {
