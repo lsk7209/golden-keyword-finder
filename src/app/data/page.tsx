@@ -96,7 +96,7 @@ export default function DataPage() {
     } finally {
       setLoading(false);
     }
-  }, [setKeywords, setLoading]);
+  }, []); // 의존성 배열을 비워서 함수 재생성 방지
 
   const fetchStats = useCallback(async () => {
     try {
@@ -457,7 +457,7 @@ export default function DataPage() {
             <KeywordTable
               keywords={filteredKeywords}
               isLoading={isLoading}
-              onRefresh={fetchKeywords}
+              onRefresh={() => fetchKeywords()}
             />
           </CardContent>
         </Card>
