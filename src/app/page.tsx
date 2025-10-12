@@ -157,9 +157,8 @@ export default function HomePage() {
       setSaveNotification(prev => ({ ...prev, show: false }));
     }, 3000);
 
-    console.log(`연관키워드 자동 저장 완료: ${completed}개 성공, ${failed}개 실패`);
+    console.log(`연관키워드 자동 저장 완료: ${finalCompleted}개 성공, ${finalFailed}개 실패`);
   };
-
   const handleSave = async (keyword: NaverKeyword) => {
     setIsSaving(true);
     try {
@@ -320,7 +319,6 @@ export default function HomePage() {
             </div>
           </div>
         )}
-
         {/* 검색 결과 */}
         {searchResults.length > 0 && (
           <div className="max-w-7xl mx-auto">
