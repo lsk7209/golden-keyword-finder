@@ -22,6 +22,17 @@ export function generateSignature(
  */
 export function getSearchAdHeaders(method: string, uri: string) {
   const timestamp = Date.now().toString();
+  
+  // URI 인코딩 확인
+  const encodedUri = encodeURIComponent(uri);
+  console.log('서명 생성 정보:', {
+    timestamp,
+    method,
+    uri,
+    encodedUri,
+    secret: process.env.SEARCHAD_SECRET ? '설정됨' : '미설정',
+  });
+  
   return {
     'X-Timestamp': timestamp,
     'X-API-KEY': process.env.SEARCHAD_API_KEY!,
@@ -29,7 +40,7 @@ export function getSearchAdHeaders(method: string, uri: string) {
     'X-Signature': generateSignature(
       timestamp,
       method,
-      uri,
+      uri, // 원본 URI 사용 (인코딩하지 않음)
       process.env.SEARCHAD_SECRET!
     ),
     'Content-Type': 'application/json; charset=UTF-8',

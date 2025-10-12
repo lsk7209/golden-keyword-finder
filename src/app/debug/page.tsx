@@ -32,17 +32,42 @@ export default function DebugPage() {
     }
   };
 
+  const testNaverAPI = async () => {
+    setIsLoading(true);
+    setResult('네이버 API 직접 테스트 시작...\n');
+
+    try {
+      const response = await fetch('/api/test-naver');
+      const data = await response.json();
+      setResult(prev => prev + `네이버 API 테스트 결과:\n`);
+      setResult(prev => prev + `응답 상태: ${response.status}\n`);
+      setResult(prev => prev + `응답 데이터: ${JSON.stringify(data, null, 2)}\n`);
+    } catch (error) {
+      setResult(prev => prev + `네이버 API 테스트 오류: ${error}\n`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="container mx-auto py-8 px-4">
       <h1 className="text-3xl font-bold mb-6">디버그 페이지</h1>
       
-      <div className="mb-6">
+      <div className="mb-6 space-x-4">
         <button
           onClick={testSearch}
           disabled={isLoading}
           className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
         >
           {isLoading ? '테스트 중...' : '키워드 검색 테스트'}
+        </button>
+        
+        <button
+          onClick={testNaverAPI}
+          disabled={isLoading}
+          className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 disabled:opacity-50"
+        >
+          {isLoading ? '테스트 중...' : '네이버 API 직접 테스트'}
         </button>
       </div>
 
