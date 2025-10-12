@@ -10,6 +10,7 @@ export function Header() {
   const navItems = [
     { href: '/', label: '홈', icon: '🏠' },
     { href: '/data', label: '데이터', icon: '📊' },
+    { href: '/debug', label: '디버그', icon: '🔧' },
   ];
 
   return (
