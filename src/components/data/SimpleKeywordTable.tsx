@@ -28,18 +28,7 @@ export function SimpleKeywordTable({ keywords, isLoading, onRefresh }: SimpleKey
   // 정렬된 키워드를 메모이제이션
   const sortedKeywords = useMemo(() => {
     return [...keywords].sort((a, b) => {
-      // 기본 정렬: 총검색수 내림차순 + 카페문서수 오름차순 (다중정렬)
-      if (sortField === 'totalSearchVolume' && sortDirection === 'desc') {
-        // 1차 정렬: 총검색수 내림차순
-        const searchVolumeDiff = (b.totalSearchVolume || 0) - (a.totalSearchVolume || 0);
-        if (searchVolumeDiff !== 0) {
-          return searchVolumeDiff;
-        }
-        // 2차 정렬: 총검색수가 같으면 카페문서수 오름차순
-        return (a.cafeCount || 0) - (b.cafeCount || 0);
-      }
-      
-      // 다른 필드 정렬 시에도 기본 다중정렬 적용
+      // 1차 정렬: 선택된 필드 기준
       const aValue = a[sortField];
       const bValue = b[sortField];
       
@@ -59,10 +48,12 @@ export function SimpleKeywordTable({ keywords, isLoading, onRefresh }: SimpleKey
       
       // 1차 정렬이 같으면 2차 정렬: 총검색수 내림차순 + 카페문서수 오름차순
       if (primarySort === 0) {
+        // 총검색수 내림차순
         const searchVolumeDiff = (b.totalSearchVolume || 0) - (a.totalSearchVolume || 0);
         if (searchVolumeDiff !== 0) {
           return searchVolumeDiff;
         }
+        // 총검색수도 같으면 카페문서수 오름차순
         return (a.cafeCount || 0) - (b.cafeCount || 0);
       }
       

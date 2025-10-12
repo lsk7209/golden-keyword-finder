@@ -53,8 +53,7 @@ export default function DataPage() {
       const { data, error, count } = await supabase
         .from('keywords')
         .select('*', { count: 'exact' })
-        .order('total_search_volume', { ascending: false }) // 1차 정렬: 총검색수 내림차순
-        .order('cafe_count', { ascending: true }) // 2차 정렬: 카페문서수 오름차순
+        .order('created_at', { ascending: false }) // 기본 정렬: 최신순
         .range(offset, offset + size - 1);
 
       if (error) {
