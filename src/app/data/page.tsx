@@ -30,7 +30,7 @@ export default function DataPage() {
 
   useEffect(() => {
     fetchKeywords();
-  }, []);
+  }, [fetchKeywords]);
 
   const fetchKeywords = async () => {
     setLoading(true);

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { NaverApiUsageMonitor } from '@/lib/naver/documents';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const usage = {
       count: NaverApiUsageMonitor.getUsageCount(),
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function DELETE(request: NextRequest) {
+export async function DELETE() {
   try {
     NaverApiUsageMonitor.resetUsage();
 

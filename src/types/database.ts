@@ -81,7 +81,7 @@ export interface Database {
           found_keywords: string[];
           user_id: string | null;
           ip_address: string | null;
-          search_options: any;
+          search_options: Record<string, unknown>;
         };
         Insert: {
           id?: string;
@@ -91,7 +91,7 @@ export interface Database {
           found_keywords?: string[];
           user_id?: string | null;
           ip_address?: string | null;
-          search_options?: any;
+          search_options?: Record<string, unknown>;
         };
         Update: {
           id?: string;
@@ -101,7 +101,7 @@ export interface Database {
           found_keywords?: string[];
           user_id?: string | null;
           ip_address?: string | null;
-          search_options?: any;
+          search_options?: Record<string, unknown>;
         };
       };
       document_fetch_logs: {

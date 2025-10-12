@@ -22,7 +22,6 @@ export async function POST(request: NextRequest) {
       .single();
 
     const now = new Date().toISOString();
-    const totalSearchVolume = parseNaverNumber(keywordData.monthlyPcQcCnt) + parseNaverNumber(keywordData.monthlyMobileQcCnt);
 
     if (existing) {
       // 업데이트

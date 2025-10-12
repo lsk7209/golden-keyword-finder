@@ -12,7 +12,7 @@ export interface NaverSearchResponse {
     title: string;
     link: string;
     description: string;
-    [key: string]: any;
+    [key: string]: unknown;
   }>;
 }
 
@@ -22,7 +22,7 @@ export interface NaverSearchResponse {
  */
 export async function fetchWithRetry(
   url: string, 
-  headers: any, 
+  headers: Record<string, string>, 
   retries = 3
 ): Promise<NaverSearchResponse> {
   for (let i = 0; i < retries; i++) {

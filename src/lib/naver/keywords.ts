@@ -19,21 +19,21 @@ export function parseNaverNumber(value: string): number {
 /**
  * 네이버 API 응답 파싱 및 정규화
  */
-export function parseKeywordResults(data: any): NaverKeyword[] {
+export function parseKeywordResults(data: { keywordList?: Array<Record<string, unknown>> }): NaverKeyword[] {
   if (!data.keywordList || !Array.isArray(data.keywordList)) {
     return [];
   }
 
-  return data.keywordList.map((item: any) => ({
-    keyword: item.relKeyword || '',
-    monthlyPcQcCnt: item.monthlyPcQcCnt || '0',
-    monthlyMobileQcCnt: item.monthlyMobileQcCnt || '0',
-    monthlyAvePcClkCnt: item.monthlyAvePcClkCnt || '0',
-    monthlyAveMobileClkCnt: item.monthlyAveMobileClkCnt || '0',
-    monthlyAvePcCtr: item.monthlyAvePcCtr || '0',
-    monthlyAveMobileCtr: item.monthlyAveMobileCtr || '0',
-    plAvgDepth: item.plAvgDepth || '0',
-    compIdx: item.compIdx || '낮음',
+  return data.keywordList.map((item: Record<string, unknown>) => ({
+    keyword: String(item.relKeyword || ''),
+    monthlyPcQcCnt: String(item.monthlyPcQcCnt || '0'),
+    monthlyMobileQcCnt: String(item.monthlyMobileQcCnt || '0'),
+    monthlyAvePcClkCnt: String(item.monthlyAvePcClkCnt || '0'),
+    monthlyAveMobileClkCnt: String(item.monthlyAveMobileClkCnt || '0'),
+    monthlyAvePcCtr: String(item.monthlyAvePcCtr || '0'),
+    monthlyAveMobileCtr: String(item.monthlyAveMobileCtr || '0'),
+    plAvgDepth: String(item.plAvgDepth || '0'),
+    compIdx: String(item.compIdx || '낮음'),
   }));
 }
 

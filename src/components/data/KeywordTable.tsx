@@ -29,8 +29,8 @@ export function KeywordTable({ keywords, isLoading, onRefresh }: KeywordTablePro
   };
 
   const sortedKeywords = [...keywords].sort((a, b) => {
-    const aValue = (a as any)[sortField];
-    const bValue = (b as any)[sortField];
+    const aValue = (a as Record<string, unknown>)[sortField];
+    const bValue = (b as Record<string, unknown>)[sortField];
     
     if (typeof aValue === 'string' && typeof bValue === 'string') {
       return sortDirection === 'asc' 
