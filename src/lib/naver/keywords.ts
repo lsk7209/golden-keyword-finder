@@ -52,13 +52,26 @@ async function searchKeywordsBatch(
   });
   
   try {
-    const response = await fetch(
-      `${process.env.SEARCHAD_BASE_URL}${uri}?${params}`,
-      {
-        method: 'GET',
-        headers: getSearchAdHeaders('GET', uri),
-      }
-    );
+    const url = `${process.env.SEARCHAD_BASE_URL}${uri}?${params}`;
+    const headers = getSearchAdHeaders('GET', uri);
+    
+    console.log('네이버 API 요청:', {
+      url,
+      headers: {
+        'X-Timestamp': headers['X-Timestamp'],
+        'X-API-KEY': headers['X-API-KEY'] ? '설정됨' : '미설정',
+        'X-Customer': headers['X-Customer'],
+        'X-Signature': headers['X-Signature'] ? '설정됨' : '미설정',
+      },
+      params: params.toString(),
+    });
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers,
+    });
+    
+    console.log('네이버 API 응답 상태:', response.status, response.statusText);
     
     if (response.status === 429) {
       // RelKwdStat는 타 오퍼레이션 대비 호출 속도가 1/5~1/6 수준으로 제한
@@ -75,11 +88,17 @@ async function searchKeywordsBatch(
     
     if (!response.ok) {
       const errorText = await response.text();
+      console.error('네이버 API 오류 응답:', errorText);
       throw new Error(`네이버 API 오류: ${response.status} ${response.statusText} - ${errorText}`);
     }
     
     const data = await response.json();
-    return parseKeywordResults(data);
+    console.log('네이버 API 응답 데이터:', JSON.stringify(data, null, 2));
+    
+    const parsedResults = parseKeywordResults(data);
+    console.log('파싱된 키워드 결과:', parsedResults.length, '개');
+    
+    return parsedResults;
     
   } catch (error) {
     if (attempt >= 3) {
