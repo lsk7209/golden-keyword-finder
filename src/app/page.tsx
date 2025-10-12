@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { SearchSection } from '@/components/home/SearchSection';
 import { KeywordTable } from '@/components/home/KeywordTable';
 import { SearchOptions, NaverKeyword } from '@/types/keyword';
 import { ApiResponse, SearchKeywordsResponse } from '@/types/api';
-import { useBackgroundSave } from '@/hooks/useBackgroundSave';
+import { usePersistentBackgroundSave } from '@/hooks/usePersistentBackgroundSave';
 
 export default function HomePage() {
   const [searchResults, setSearchResults] = useState<NaverKeyword[]>([]);
@@ -14,8 +14,13 @@ export default function HomePage() {
   const [isFetchingDocs, setIsFetchingDocs] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  // 백그라운드 자동 저장 훅 사용
-  const { saveProgress, saveNotification, startBackgroundSave } = useBackgroundSave();
+  // 지속적 백그라운드 자동 저장 훅 사용
+  const { saveProgress, saveNotification, startPersistentBackgroundSave, recoverPendingSaves } = usePersistentBackgroundSave();
+
+  // 페이지 로드 시 미완료된 저장 작업 복구
+  useEffect(() => {
+    recoverPendingSaves();
+  }, [recoverPendingSaves]);
 
   const handleSearch = async (options: SearchOptions) => {
     setIsLoading(true);
@@ -55,8 +60,8 @@ export default function HomePage() {
 
         setSearchResults(naverKeywords);
 
-        // 검색된 연관키워드를 백그라운드에서 자동으로 데이터베이스에 저장
-        startBackgroundSave(naverKeywords);
+        // 검색된 연관키워드를 지속적 백그라운드에서 자동으로 데이터베이스에 저장
+        startPersistentBackgroundSave(naverKeywords);
 
         // 자동 문서수 조회 옵션이 켜져있으면
         if (options.autoFetchDocs) {
@@ -172,8 +177,8 @@ export default function HomePage() {
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
                 </div>
                 <div className="ml-3 flex-1">
-                  <h3 className="text-sm font-medium text-blue-800">백그라운드에서 자동 저장 중...</h3>
-                  <p className="text-xs text-blue-600 mt-1">페이지를 이동해도 저장이 계속됩니다</p>
+                  <h3 className="text-sm font-medium text-blue-800">지속적 백그라운드 자동 저장 중...</h3>
+                  <p className="text-xs text-blue-600 mt-1">메뉴 이동, 페이지 새로고침, 브라우저 종료해도 저장이 계속됩니다</p>
                   <div className="mt-2">
                     <div className="flex justify-between text-sm text-blue-700 mb-1">
                       <span>{saveProgress.current} / {saveProgress.total}</span>
@@ -269,8 +274,8 @@ export default function HomePage() {
                   <div className="text-4xl mb-4">💾</div>
                   <h3 className="text-lg font-semibold mb-2">2. 자동 저장</h3>
                   <p className="text-gray-600 text-sm">
-                    검색된 연관키워드가 백그라운드에서 자동으로 데이터베이스에 저장되고<br/>
-                    <span className="text-blue-600 font-medium">카페, 블로그, 웹, 뉴스 문서수도 자동으로 수집됩니다</span>
+                    검색된 연관키워드가 지속적 백그라운드에서 자동으로 데이터베이스에 저장되고<br/>
+                    <span className="text-blue-600 font-medium">메뉴 이동과 관계없이 카페, 블로그, 웹, 뉴스 문서수도 자동으로 수집됩니다</span>
                   </p>
                 </div>
                 
