@@ -45,10 +45,19 @@ async function searchKeywordsBatch(
   showDetail = true,
   attempt = 1
 ): Promise<NaverKeyword[]> {
+  // 네이버 검색광고 API 엔드포인트 확인
   const uri = '/keywordstool';
+  // 대안: '/keywordstool' 대신 다른 엔드포인트 시도
+  // const uri = '/keywordstool/relkeyword';
   const params = new URLSearchParams({
     hintKeywords: seedKeywords.join(','),
     showDetail: showDetail ? '1' : '0',
+  });
+  
+  console.log('네이버 API 파라미터:', {
+    hintKeywords: seedKeywords.join(','),
+    showDetail: showDetail ? '1' : '0',
+    paramsString: params.toString(),
   });
   
   try {
@@ -95,8 +104,20 @@ async function searchKeywordsBatch(
     const data = await response.json();
     console.log('네이버 API 응답 데이터:', JSON.stringify(data, null, 2));
     
+    // 응답 구조 상세 분석
+    if (data.keywordList) {
+      console.log('keywordList 존재:', data.keywordList.length, '개');
+      console.log('keywordList 샘플:', data.keywordList.slice(0, 2));
+    } else {
+      console.log('keywordList가 없습니다. 응답 구조:', Object.keys(data));
+    }
+    
     const parsedResults = parseKeywordResults(data);
     console.log('파싱된 키워드 결과:', parsedResults.length, '개');
+    
+    if (parsedResults.length === 0) {
+      console.log('키워드가 파싱되지 않았습니다. 원본 데이터:', data);
+    }
     
     return parsedResults;
     
