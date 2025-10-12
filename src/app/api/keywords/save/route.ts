@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = createClient();
+        const supabase = await createClient();
 
     // 중복 체크
     const { data: existing } = await supabase

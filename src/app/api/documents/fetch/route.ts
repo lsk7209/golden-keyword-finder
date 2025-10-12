@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     const documentCounts = await getDocumentCounts(keyword);
 
         // 데이터베이스 업데이트
-        const supabase = createClient();
+        const supabase = await createClient();
         const { data: existing } = await supabase
       .from('keywords')
       .select('id')
