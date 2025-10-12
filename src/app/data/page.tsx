@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useKeywordStore } from '@/store/keyword-store';
 import { Keyword } from '@/types/keyword';
 import { supabase } from '@/lib/supabase/client';
@@ -27,14 +27,26 @@ export default function DataPage() {
   } = useKeywordStore();
 
   const [showFilters, setShowFilters] = useState(false);
+  const [isAutoRefresh, setIsAutoRefresh] = useState(false);
+  const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
+  const [stats, setStats] = useState({
+    totalKeywords: 0,
+    goldenKeywords: 0,
+    recentKeywords: 0,
+    avgGoldenScore: 0,
+  });
+  const autoRefreshInterval = useRef<NodeJS.Timeout | null>(null);
 
-  const fetchKeywords = useCallback(async () => {
+  const fetchKeywords = useCallback(async (limit = 1000, offset = 0) => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      console.log(`키워드 조회 시작: limit=${limit}, offset=${offset}`);
+      
+      const { data, error, count } = await supabase
         .from('keywords')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('*', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
 
       if (error) {
         throw error;
@@ -69,6 +81,8 @@ export default function DataPage() {
         }));
 
         setKeywords(keywords);
+        setLastUpdateTime(new Date());
+        console.log(`키워드 조회 완료: ${keywords.length}개 (총 ${count}개)`);
       }
     } catch (error) {
       console.error('키워드 조회 오류:', error);
@@ -77,9 +91,45 @@ export default function DataPage() {
     }
   }, [setKeywords, setLoading]);
 
+  const fetchStats = useCallback(async () => {
+    try {
+      const response = await fetch('/api/keywords/stats');
+      const result = await response.json();
+      
+      if (result.success) {
+        setStats(result.data);
+      }
+    } catch (error) {
+      console.error('통계 조회 오류:', error);
+    }
+  }, []);
+
   useEffect(() => {
     fetchKeywords();
-  }, [fetchKeywords]);
+    fetchStats();
+  }, [fetchKeywords, fetchStats]);
+
+  // 자동 새로고침 기능
+  useEffect(() => {
+    if (isAutoRefresh) {
+      autoRefreshInterval.current = setInterval(() => {
+        console.log('자동 새로고침 실행');
+        fetchKeywords();
+        fetchStats();
+      }, 30000); // 30초마다 새로고침
+    } else {
+      if (autoRefreshInterval.current) {
+        clearInterval(autoRefreshInterval.current);
+        autoRefreshInterval.current = null;
+      }
+    }
+
+    return () => {
+      if (autoRefreshInterval.current) {
+        clearInterval(autoRefreshInterval.current);
+      }
+    };
+  }, [isAutoRefresh, fetchKeywords, fetchStats]);
 
   const handleBulkDelete = async () => {
     if (selectedIds.length === 0) return;
@@ -176,7 +226,7 @@ export default function DataPage() {
     }
   };
 
-  const stats = {
+  const localStats = {
     total: keywords.length,
     filtered: filteredKeywords.length,
     golden: goldenKeywords.length,
@@ -190,8 +240,37 @@ export default function DataPage() {
       <div className="container mx-auto px-4 py-8">
         {/* 헤더 */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">📊 키워드 데이터</h1>
-          <p className="text-gray-600">저장된 키워드들을 관리하고 분석하세요</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">📊 키워드 데이터</h1>
+              <p className="text-gray-600">저장된 키워드들을 관리하고 분석하세요</p>
+              {lastUpdateTime && (
+                <p className="text-sm text-gray-500 mt-1">
+                  마지막 업데이트: {lastUpdateTime.toLocaleString('ko-KR')}
+                </p>
+              )}
+            </div>
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="autoRefresh"
+                  checked={isAutoRefresh}
+                  onChange={(e) => setIsAutoRefresh(e.target.checked)}
+                  className="rounded border-gray-300"
+                />
+                <label htmlFor="autoRefresh" className="text-sm text-gray-600">
+                  자동 새로고침 (30초)
+                </label>
+              </div>
+              {isAutoRefresh && (
+                <div className="flex items-center space-x-1 text-green-600">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span className="text-sm">실시간 업데이트 중</span>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* 통계 카드 */}
@@ -201,7 +280,8 @@ export default function DataPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">총 키워드</p>
-                  <p className="text-2xl font-bold">{formatNumber(stats.total)}</p>
+                  <p className="text-2xl font-bold">{formatNumber(stats.totalKeywords)}</p>
+                  <p className="text-xs text-gray-500">DB 전체</p>
                 </div>
                 <div className="text-2xl">📝</div>
               </div>
@@ -212,10 +292,11 @@ export default function DataPage() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">필터된 키워드</p>
-                  <p className="text-2xl font-bold">{formatNumber(stats.filtered)}</p>
+                  <p className="text-sm text-gray-600">최근 24시간</p>
+                  <p className="text-2xl font-bold text-green-600">{formatNumber(stats.recentKeywords)}</p>
+                  <p className="text-xs text-gray-500">새로 추가</p>
                 </div>
-                <div className="text-2xl">🔍</div>
+                <div className="text-2xl">🆕</div>
               </div>
             </CardContent>
           </Card>
@@ -225,7 +306,8 @@ export default function DataPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">황금키워드</p>
-                  <p className="text-2xl font-bold text-yellow-600">{formatNumber(stats.golden)}</p>
+                  <p className="text-2xl font-bold text-yellow-600">{formatNumber(stats.goldenKeywords)}</p>
+                  <p className="text-xs text-gray-500">점수 ≥ 50</p>
                 </div>
                 <div className="text-2xl">💎</div>
               </div>
@@ -237,7 +319,8 @@ export default function DataPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">평균 황금점수</p>
-                  <p className="text-2xl font-bold text-blue-600">{stats.avgGoldenScore}</p>
+                  <p className="text-2xl font-bold text-blue-600">{stats.avgGoldenScore.toFixed(2)}</p>
+                  <p className="text-xs text-gray-500">전체 평균</p>
                 </div>
                 <div className="text-2xl">⭐</div>
               </div>
@@ -272,7 +355,10 @@ export default function DataPage() {
             </Button>
             
             <Button
-              onClick={fetchKeywords}
+              onClick={() => {
+                fetchKeywords();
+                fetchStats();
+              }}
               variant="outline"
               disabled={isLoading}
             >
