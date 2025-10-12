@@ -34,10 +34,12 @@ export default function DataPage() {
     recentKeywords: 0,
     avgGoldenScore: 0,
   });
+  const [error, setError] = useState<string | null>(null);
   const autoRefreshInterval = useRef<NodeJS.Timeout | null>(null);
 
   const fetchKeywords = useCallback(async (limit = 1000, offset = 0) => {
     setLoading(true);
+    setError(null);
     try {
       console.log(`키워드 조회 시작: limit=${limit}, offset=${offset}`);
       
@@ -48,6 +50,8 @@ export default function DataPage() {
         .range(offset, offset + limit - 1);
 
       if (error) {
+        console.error('Supabase 오류:', error);
+        setError(`데이터베이스 오류: ${error.message}`);
         throw error;
       }
 
@@ -82,9 +86,13 @@ export default function DataPage() {
         setKeywords(keywords);
         setLastUpdateTime(new Date());
         console.log(`키워드 조회 완료: ${keywords.length}개 (총 ${count}개)`);
+      } else {
+        console.log('데이터가 없습니다.');
+        setKeywords([]);
       }
     } catch (error) {
       console.error('키워드 조회 오류:', error);
+      setError(error instanceof Error ? error.message : '키워드를 불러오는 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
     }
@@ -327,6 +335,39 @@ export default function DataPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* 오류 메시지 */}
+        {error && (
+          <div className="mb-6">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <span className="text-red-400 text-xl">⚠️</span>
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-red-800">데이터 로딩 오류</h3>
+                  <div className="mt-2 text-sm text-red-700">
+                    <p>{error}</p>
+                  </div>
+                  <div className="mt-3">
+                    <Button
+                      onClick={() => {
+                        setError(null);
+                        fetchKeywords();
+                        fetchStats();
+                      }}
+                      size="sm"
+                      variant="outline"
+                      className="border-red-300 text-red-700 hover:bg-red-50"
+                    >
+                      다시 시도
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 액션 바 */}
         <div className="flex items-center justify-between mb-6">
