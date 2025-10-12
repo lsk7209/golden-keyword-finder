@@ -13,7 +13,7 @@ interface SimpleKeywordTableProps {
 }
 
 export function SimpleKeywordTable({ keywords, isLoading, onRefresh }: SimpleKeywordTableProps) {
-  const [sortField, setSortField] = useState<keyof Keyword>('createdAt');
+  const [sortField, setSortField] = useState<keyof Keyword>('totalSearchVolume');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
   const handleSort = (field: keyof Keyword) => {
@@ -26,6 +26,18 @@ export function SimpleKeywordTable({ keywords, isLoading, onRefresh }: SimpleKey
   };
 
   const sortedKeywords = [...keywords].sort((a, b) => {
+    // 기본 정렬: 총검색수 내림차순 + 카페문서수 오름차순
+    if (sortField === 'totalSearchVolume' && sortDirection === 'desc') {
+      // 총검색수 내림차순
+      const searchVolumeDiff = (b.totalSearchVolume || 0) - (a.totalSearchVolume || 0);
+      if (searchVolumeDiff !== 0) {
+        return searchVolumeDiff;
+      }
+      // 총검색수가 같으면 카페문서수 오름차순
+      return (a.cafeCount || 0) - (b.cafeCount || 0);
+    }
+    
+    // 다른 필드 정렬은 기존 로직 사용
     const aValue = a[sortField];
     const bValue = b[sortField];
     
