@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase/client';
 import { SimpleKeywordTable } from '@/components/data/SimpleKeywordTable';
 import { FilterSidebar } from '@/components/data/FilterSidebar';
 import { BulkActions } from '@/components/data/BulkActions';
+import { Pagination } from '@/components/data/Pagination';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -36,18 +37,25 @@ export default function DataPage() {
   });
   const [error, setError] = useState<string | null>(null);
   const autoRefreshInterval = useRef<NodeJS.Timeout | null>(null);
+  
+  // 페이지네이션 상태
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(100);
+  const [totalCount, setTotalCount] = useState(0);
 
-  const fetchKeywords = useCallback(async (limit = 1000, offset = 0) => {
+  const fetchKeywords = useCallback(async (page = currentPage, size = pageSize) => {
     setLoading(true);
     setError(null);
     try {
-      console.log(`키워드 조회 시작: limit=${limit}, offset=${offset}`);
+      const offset = (page - 1) * size;
+      console.log(`키워드 조회 시작: page=${page}, size=${size}, offset=${offset}`);
       
       const { data, error, count } = await supabase
         .from('keywords')
         .select('*', { count: 'exact' })
-        .order('created_at', { ascending: false })
-        .range(offset, offset + limit - 1);
+        .order('total_search_volume', { ascending: false }) // 1차 정렬: 총검색수 내림차순
+        .order('cafe_count', { ascending: true }) // 2차 정렬: 카페문서수 오름차순
+        .range(offset, offset + size - 1);
 
       if (error) {
         console.error('Supabase 오류:', error);
@@ -84,6 +92,7 @@ export default function DataPage() {
         }));
 
         setKeywords(keywords);
+        setTotalCount(count || 0);
         setLastUpdateTime(new Date());
         console.log(`키워드 조회 완료: ${keywords.length}개 (총 ${count}개)`);
       } else {
@@ -111,17 +120,21 @@ export default function DataPage() {
     }
   }, [setStats]);
 
+  const handlePageChange = useCallback((page: number) => {
+    setCurrentPage(page);
+  }, []);
+
   useEffect(() => {
-    fetchKeywords();
+    fetchKeywords(currentPage, pageSize);
     fetchStats();
-  }, [fetchKeywords, fetchStats]); // 의존성 배열에 함수들 추가
+  }, [fetchKeywords, fetchStats, currentPage, pageSize]); // 페이지 변경 시에도 호출
 
   // 자동 새로고침 기능
   useEffect(() => {
     if (isAutoRefresh) {
       autoRefreshInterval.current = setInterval(() => {
         console.log('자동 새로고침 실행');
-        fetchKeywords();
+        fetchKeywords(currentPage, pageSize);
         fetchStats();
       }, 30000); // 30초마다 새로고침
     } else {
@@ -453,11 +466,18 @@ export default function DataPage() {
           <CardHeader>
             <CardTitle>키워드 목록</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
             <SimpleKeywordTable
               keywords={keywords}
               isLoading={isLoading}
-              onRefresh={() => fetchKeywords()}
+              onRefresh={() => fetchKeywords(currentPage, pageSize)}
+            />
+            <Pagination
+              currentPage={currentPage}
+              totalPages={Math.ceil(totalCount / pageSize)}
+              onPageChange={handlePageChange}
+              pageSize={pageSize}
+              totalCount={totalCount}
             />
           </CardContent>
         </Card>
