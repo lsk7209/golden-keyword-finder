@@ -35,8 +35,8 @@ CREATE TABLE keywords (
   -- 황금점수 (자동 계산)
   golden_score DECIMAL(10,2) GENERATED ALWAYS AS 
     (CASE 
-      WHEN total_doc_count > 0 THEN 
-        CAST(total_search_volume AS DECIMAL) / total_doc_count 
+      WHEN (blog_count + cafe_count + web_count + news_count) > 0 THEN 
+        CAST(total_search_volume AS DECIMAL) / (blog_count + cafe_count + web_count + news_count)
       ELSE 999.99 
     END) STORED,
   
