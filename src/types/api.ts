@@ -22,6 +22,11 @@ export interface SearchKeywordsResponse {
     plAvgDepth: number;
     compIdx: string;
   }>;
+  saveResult?: {
+    saved: number;
+    failed: number;
+    total: number;
+  };
 }
 
 export interface FetchDocumentsRequest {

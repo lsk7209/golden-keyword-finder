@@ -5,7 +5,6 @@ import { SearchSection } from '@/components/home/SearchSection';
 import { KeywordTable } from '@/components/home/KeywordTable';
 import { SearchOptions, NaverKeyword } from '@/types/keyword';
 import { ApiResponse, SearchKeywordsResponse } from '@/types/api';
-import { usePersistentBackgroundSave } from '@/hooks/usePersistentBackgroundSave';
 
 export default function HomePage() {
   const [searchResults, setSearchResults] = useState<NaverKeyword[]>([]);
@@ -14,13 +13,15 @@ export default function HomePage() {
   const [isFetchingDocs, setIsFetchingDocs] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  // 지속적 백그라운드 자동 저장 훅 사용
-  const { saveProgress, saveNotification, startPersistentBackgroundSave, recoverPendingSaves } = usePersistentBackgroundSave();
-
-  // 페이지 로드 시 미완료된 저장 작업 복구
-  useEffect(() => {
-    recoverPendingSaves();
-  }, [recoverPendingSaves]);
+  const [saveNotification, setSaveNotification] = useState<{
+    show: boolean;
+    message: string;
+    type: 'success' | 'error' | 'info';
+  }>({
+    show: false,
+    message: '',
+    type: 'info',
+  });
 
   const handleSearch = async (options: SearchOptions) => {
     setIsLoading(true);
@@ -60,8 +61,20 @@ export default function HomePage() {
 
         setSearchResults(naverKeywords);
 
-        // 검색된 연관키워드를 지속적 백그라운드에서 자동으로 데이터베이스에 저장
-        startPersistentBackgroundSave(naverKeywords);
+        // 서버에서 자동으로 저장된 결과 표시
+        if (result.data.saveResult) {
+          const { saved, failed, total } = result.data.saveResult;
+          setSaveNotification({
+            show: true,
+            message: `✅ ${saved}개 키워드가 서버에서 자동으로 데이터베이스에 저장되었습니다${failed > 0 ? ` (${failed}개 실패)` : ''}`,
+            type: failed > 0 ? 'error' : 'success',
+          });
+
+          // 5초 후 알림 자동 숨김
+          setTimeout(() => {
+            setSaveNotification(prev => ({ ...prev, show: false }));
+          }, 5000);
+        }
 
         // 자동 문서수 조회 옵션이 켜져있으면
         if (options.autoFetchDocs) {
@@ -168,38 +181,6 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* 백그라운드 자동 저장 진행 상황 */}
-        {saveProgress.isActive && (
-          <div className="max-w-2xl mx-auto mb-8">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-                </div>
-                <div className="ml-3 flex-1">
-                  <h3 className="text-sm font-medium text-blue-800">지속적 백그라운드 자동 저장 중...</h3>
-                  <p className="text-xs text-blue-600 mt-1">메뉴 이동, 페이지 새로고침, 브라우저 종료해도 저장이 계속됩니다</p>
-                  <div className="mt-2">
-                    <div className="flex justify-between text-sm text-blue-700 mb-1">
-                      <span>{saveProgress.current} / {saveProgress.total}</span>
-                      <span>{Math.round((saveProgress.current / saveProgress.total) * 100)}%</span>
-                    </div>
-                    <div className="w-full bg-blue-200 rounded-full h-2">
-                      <div 
-                        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${(saveProgress.current / saveProgress.total) * 100}%` }}
-                      ></div>
-                    </div>
-                    <div className="flex justify-between text-xs text-blue-600 mt-1">
-                      <span>성공: {saveProgress.completed}</span>
-                      <span>실패: {saveProgress.failed}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* 저장 완료 알림 */}
         {saveNotification.show && (
@@ -248,7 +229,6 @@ export default function HomePage() {
               onFetchDocs={handleFetchDocs}
               isSaving={isSaving}
               isFetchingDocs={isFetchingDocs}
-              autoSaveProgress={saveProgress}
             />
           </div>
         )}
@@ -274,8 +254,8 @@ export default function HomePage() {
                   <div className="text-4xl mb-4">💾</div>
                   <h3 className="text-lg font-semibold mb-2">2. 자동 저장</h3>
                   <p className="text-gray-600 text-sm">
-                    검색된 연관키워드가 지속적 백그라운드에서 자동으로 데이터베이스에 저장되고<br/>
-                    <span className="text-blue-600 font-medium">메뉴 이동과 관계없이 카페, 블로그, 웹, 뉴스 문서수도 자동으로 수집됩니다</span>
+                    검색된 연관키워드가 서버에서 자동으로 데이터베이스에 저장되고<br/>
+                    <span className="text-blue-600 font-medium">카페, 블로그, 웹, 뉴스 문서수도 자동으로 수집됩니다</span>
                   </p>
                 </div>
                 

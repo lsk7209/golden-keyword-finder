@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { searchKeywords } from '@/lib/naver/keywords';
 import { SearchKeywordsRequest, SearchKeywordsResponse } from '@/types/api';
+import { createClient } from '@/lib/supabase/server';
+import { getDocumentCounts, NaverApiUsageMonitor } from '@/lib/naver/documents';
 
 export async function POST(request: NextRequest) {
   try {
@@ -49,7 +51,106 @@ export async function POST(request: NextRequest) {
       compIdx: k.compIdx,
     }));
 
-    const response: SearchKeywordsResponse = { keywords };
+    // 서버에서 바로 데이터베이스에 저장
+    console.log('서버에서 키워드 자동 저장 시작...');
+    const supabase = await createClient();
+    let savedCount = 0;
+    let failedCount = 0;
+
+    for (const keyword of keywords) {
+      try {
+        // 중복 체크
+        const { data: existing } = await supabase
+          .from('keywords')
+          .select('id')
+          .eq('keyword', keyword.keyword)
+          .single();
+
+        const now = new Date().toISOString();
+
+        if (existing) {
+          // 업데이트
+          await supabase
+            .from('keywords')
+            // @ts-expect-error - Supabase 타입 정의 문제로 인한 임시 해결
+            .update({
+              monthly_pc_qc_cnt: keyword.monthlyPcQcCnt,
+              monthly_mobile_qc_cnt: keyword.monthlyMobileQcCnt,
+              monthly_ave_pc_clk_cnt: keyword.monthlyAvePcClkCnt,
+              monthly_ave_mobile_clk_cnt: keyword.monthlyAveMobileClkCnt,
+              monthly_ave_pc_ctr: keyword.monthlyAvePcCtr,
+              monthly_ave_mobile_ctr: keyword.monthlyAveMobileCtr,
+              pl_avg_depth: keyword.plAvgDepth,
+              comp_idx: keyword.compIdx as '낮음' | '중간' | '높음',
+              updated_at: now,
+            })
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            .eq('id', (existing as any).id);
+        } else {
+          // 문서수 자동 수집
+          let documentCounts = {
+            blogCount: 0,
+            cafeCount: 0,
+            webCount: 0,
+            newsCount: 0,
+          };
+
+          try {
+            console.log(`문서수 자동 수집 시작: ${keyword.keyword}`);
+            NaverApiUsageMonitor.incrementUsage(4);
+            documentCounts = await getDocumentCounts(keyword.keyword);
+            console.log(`문서수 수집 완료:`, documentCounts);
+          } catch (docError) {
+            console.error('문서수 수집 실패:', docError);
+          }
+
+          // 새로 삽입
+          await supabase
+            .from('keywords')
+            // @ts-expect-error - Supabase 타입 정의 문제로 인한 임시 해결
+            .insert({
+              keyword: keyword.keyword,
+              monthly_pc_qc_cnt: keyword.monthlyPcQcCnt,
+              monthly_mobile_qc_cnt: keyword.monthlyMobileQcCnt,
+              monthly_ave_pc_clk_cnt: keyword.monthlyAvePcClkCnt,
+              monthly_ave_mobile_clk_cnt: keyword.monthlyAveMobileClkCnt,
+              monthly_ave_pc_ctr: keyword.monthlyAvePcCtr,
+              monthly_ave_mobile_ctr: keyword.monthlyAveMobileCtr,
+              pl_avg_depth: keyword.plAvgDepth,
+              comp_idx: keyword.compIdx as '낮음' | '중간' | '높음',
+              blog_count: documentCounts.blogCount,
+              cafe_count: documentCounts.cafeCount,
+              web_count: documentCounts.webCount,
+              news_count: documentCounts.newsCount,
+              last_checked_at: now,
+              tags: [],
+              is_favorite: false,
+              created_at: now,
+              updated_at: now,
+            });
+        }
+
+        savedCount++;
+        console.log(`키워드 저장 완료: ${keyword.keyword}`);
+      } catch (error) {
+        failedCount++;
+        console.error(`키워드 저장 실패: ${keyword.keyword}`, error);
+      }
+
+      // 저장 간격
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    console.log(`서버 자동 저장 완료: ${savedCount}개 성공, ${failedCount}개 실패`);
+
+    const response: SearchKeywordsResponse = { 
+      keywords,
+      saveResult: {
+        saved: savedCount,
+        failed: failedCount,
+        total: keywords.length,
+      }
+    };
 
     return NextResponse.json({
       success: true,
