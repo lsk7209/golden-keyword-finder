@@ -36,7 +36,7 @@ CREATE TABLE keywords (
   golden_score DECIMAL(10,2) GENERATED ALWAYS AS 
     (CASE 
       WHEN (blog_count + cafe_count + web_count + news_count) > 0 THEN 
-        CAST(total_search_volume AS DECIMAL) / (blog_count + cafe_count + web_count + news_count)
+        CAST((monthly_pc_qc_cnt + monthly_mobile_qc_cnt) AS DECIMAL) / (blog_count + cafe_count + web_count + news_count)
       ELSE 999.99 
     END) STORED,
   
