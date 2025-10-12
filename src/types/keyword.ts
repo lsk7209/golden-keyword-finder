@@ -67,6 +67,15 @@ export interface FilterOptions {
   searchVolumeMin: number;
   searchVolumeMax: number;
   docCountMax: number;
+  // 문서수 범위 필터
+  cafeCountMin: number;
+  cafeCountMax: number;
+  blogCountMin: number;
+  blogCountMax: number;
+  webCountMin: number;
+  webCountMax: number;
+  newsCountMin: number;
+  newsCountMax: number;
   dateRange: [Date, Date];
   tags: string[];
 }

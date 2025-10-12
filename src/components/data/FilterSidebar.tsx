@@ -28,6 +28,14 @@ export function FilterSidebar({ filters, onFiltersChange }: FilterSidebarProps) 
       searchVolumeMin: 0,
       searchVolumeMax: 1000000,
       docCountMax: 1000000,
+      cafeCountMin: 0,
+      cafeCountMax: 1000000,
+      blogCountMin: 0,
+      blogCountMax: 1000000,
+      webCountMin: 0,
+      webCountMax: 1000000,
+      newsCountMin: 0,
+      newsCountMax: 1000000,
       dateRange: [new Date(2020, 0, 1), new Date()],
       tags: [],
     };
@@ -179,10 +187,10 @@ export function FilterSidebar({ filters, onFiltersChange }: FilterSidebarProps) 
           </div>
         </div>
 
-        {/* 문서수 최대값 */}
+        {/* 총 문서수 최대값 */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            최대 문서수
+            총 문서수 최대값
           </label>
           <Input
             type="number"
@@ -193,6 +201,114 @@ export function FilterSidebar({ filters, onFiltersChange }: FilterSidebarProps) 
               docCountMax: parseInt(e.target.value) || 1000000
             }))}
           />
+        </div>
+
+        {/* 카페 문서수 범위 */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            카페 문서수 범위
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            <Input
+              type="number"
+              placeholder="최소값"
+              value={localFilters.cafeCountMin}
+              onChange={(e) => setLocalFilters(prev => ({
+                ...prev,
+                cafeCountMin: parseInt(e.target.value) || 0
+              }))}
+            />
+            <Input
+              type="number"
+              placeholder="최대값"
+              value={localFilters.cafeCountMax}
+              onChange={(e) => setLocalFilters(prev => ({
+                ...prev,
+                cafeCountMax: parseInt(e.target.value) || 1000000
+              }))}
+            />
+          </div>
+        </div>
+
+        {/* 블로그 문서수 범위 */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            블로그 문서수 범위
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            <Input
+              type="number"
+              placeholder="최소값"
+              value={localFilters.blogCountMin}
+              onChange={(e) => setLocalFilters(prev => ({
+                ...prev,
+                blogCountMin: parseInt(e.target.value) || 0
+              }))}
+            />
+            <Input
+              type="number"
+              placeholder="최대값"
+              value={localFilters.blogCountMax}
+              onChange={(e) => setLocalFilters(prev => ({
+                ...prev,
+                blogCountMax: parseInt(e.target.value) || 1000000
+              }))}
+            />
+          </div>
+        </div>
+
+        {/* 웹 문서수 범위 */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            웹 문서수 범위
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            <Input
+              type="number"
+              placeholder="최소값"
+              value={localFilters.webCountMin}
+              onChange={(e) => setLocalFilters(prev => ({
+                ...prev,
+                webCountMin: parseInt(e.target.value) || 0
+              }))}
+            />
+            <Input
+              type="number"
+              placeholder="최대값"
+              value={localFilters.webCountMax}
+              onChange={(e) => setLocalFilters(prev => ({
+                ...prev,
+                webCountMax: parseInt(e.target.value) || 1000000
+              }))}
+            />
+          </div>
+        </div>
+
+        {/* 뉴스 문서수 범위 */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            뉴스 문서수 범위
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            <Input
+              type="number"
+              placeholder="최소값"
+              value={localFilters.newsCountMin}
+              onChange={(e) => setLocalFilters(prev => ({
+                ...prev,
+                newsCountMin: parseInt(e.target.value) || 0
+              }))}
+            />
+            <Input
+              type="number"
+              placeholder="최대값"
+              value={localFilters.newsCountMax}
+              onChange={(e) => setLocalFilters(prev => ({
+                ...prev,
+                newsCountMax: parseInt(e.target.value) || 1000000
+              }))}
+            />
+          </div>
         </div>
 
         {/* 퀵 필터 */}
@@ -260,7 +376,27 @@ export function FilterSidebar({ filters, onFiltersChange }: FilterSidebarProps) 
             )}
             {localFilters.docCountMax < 1000000 && (
               <Badge variant="secondary">
-                문서수: {localFilters.docCountMax} 이하
+                총문서수: {localFilters.docCountMax} 이하
+              </Badge>
+            )}
+            {localFilters.cafeCountMin > 0 && (
+              <Badge variant="secondary">
+                카페: {localFilters.cafeCountMin}+
+              </Badge>
+            )}
+            {localFilters.blogCountMin > 0 && (
+              <Badge variant="secondary">
+                블로그: {localFilters.blogCountMin}+
+              </Badge>
+            )}
+            {localFilters.webCountMin > 0 && (
+              <Badge variant="secondary">
+                웹: {localFilters.webCountMin}+
+              </Badge>
+            )}
+            {localFilters.newsCountMin > 0 && (
+              <Badge variant="secondary">
+                뉴스: {localFilters.newsCountMin}+
               </Badge>
             )}
           </div>

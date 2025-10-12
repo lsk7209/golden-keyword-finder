@@ -34,6 +34,15 @@ const defaultFilters: FilterOptions = {
   searchVolumeMin: 0,
   searchVolumeMax: 999999999, // 더 넓은 범위로 설정
   docCountMax: 999999999, // 더 넓은 범위로 설정
+  // 문서수 범위 필터
+  cafeCountMin: 0,
+  cafeCountMax: 999999999,
+  blogCountMin: 0,
+  blogCountMax: 999999999,
+  webCountMin: 0,
+  webCountMax: 999999999,
+  newsCountMin: 0,
+  newsCountMax: 999999999,
   dateRange: [new Date(2020, 0, 1), new Date()],
   tags: [],
 };
@@ -121,6 +130,30 @@ export const useKeywordStore = create<KeywordStore>((set, get) => ({
       const totalDocCount = keyword.totalDocCount ?? 0;
       if (totalDocCount > filters.docCountMax) {
         console.log(`키워드 ${keyword.keyword} 필터링됨: 문서수 ${totalDocCount}이 최대값 ${filters.docCountMax} 초과`);
+        return false;
+      }
+      
+      // 카페 문서수 범위
+      const cafeCount = keyword.cafeCount ?? 0;
+      if (cafeCount < filters.cafeCountMin || cafeCount > filters.cafeCountMax) {
+        return false;
+      }
+      
+      // 블로그 문서수 범위
+      const blogCount = keyword.blogCount ?? 0;
+      if (blogCount < filters.blogCountMin || blogCount > filters.blogCountMax) {
+        return false;
+      }
+      
+      // 웹 문서수 범위
+      const webCount = keyword.webCount ?? 0;
+      if (webCount < filters.webCountMin || webCount > filters.webCountMax) {
+        return false;
+      }
+      
+      // 뉴스 문서수 범위
+      const newsCount = keyword.newsCount ?? 0;
+      if (newsCount < filters.newsCountMin || newsCount > filters.newsCountMax) {
         return false;
       }
       
