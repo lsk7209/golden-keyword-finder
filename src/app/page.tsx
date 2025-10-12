@@ -5,6 +5,7 @@ import { SearchSection } from '@/components/home/SearchSection';
 import { KeywordTable } from '@/components/home/KeywordTable';
 import { SearchOptions, NaverKeyword } from '@/types/keyword';
 import { ApiResponse, SearchKeywordsResponse } from '@/types/api';
+import { useBackgroundSave } from '@/hooks/useBackgroundSave';
 
 export default function HomePage() {
   const [searchResults, setSearchResults] = useState<NaverKeyword[]>([]);
@@ -12,28 +13,9 @@ export default function HomePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isFetchingDocs, setIsFetchingDocs] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [autoSaveProgress, setAutoSaveProgress] = useState<{
-    isActive: boolean;
-    current: number;
-    total: number;
-    completed: number;
-    failed: number;
-  }>({
-    isActive: false,
-    current: 0,
-    total: 0,
-    completed: 0,
-    failed: 0,
-  });
-  const [saveNotification, setSaveNotification] = useState<{
-    show: boolean;
-    message: string;
-    type: 'success' | 'error' | 'info';
-  }>({
-    show: false,
-    message: '',
-    type: 'info',
-  });
+  
+  // 백그라운드 자동 저장 훅 사용
+  const { saveProgress, saveNotification, startBackgroundSave } = useBackgroundSave();
 
   const handleSearch = async (options: SearchOptions) => {
     setIsLoading(true);
@@ -73,8 +55,8 @@ export default function HomePage() {
 
         setSearchResults(naverKeywords);
 
-        // 검색된 연관키워드를 자동으로 데이터베이스에 저장
-        await handleAutoSave(naverKeywords);
+        // 검색된 연관키워드를 백그라운드에서 자동으로 데이터베이스에 저장
+        startBackgroundSave(naverKeywords);
 
         // 자동 문서수 조회 옵션이 켜져있으면
         if (options.autoFetchDocs) {
@@ -91,74 +73,6 @@ export default function HomePage() {
     }
   };
 
-  const handleAutoSave = async (keywords: NaverKeyword[]) => {
-    if (keywords.length === 0) return;
-
-    setAutoSaveProgress({
-      isActive: true,
-      current: 0,
-      total: keywords.length,
-      completed: 0,
-      failed: 0,
-    });
-
-    console.log(`연관키워드 자동 저장 시작: ${keywords.length}개`);
-
-    for (let i = 0; i < keywords.length; i++) {
-      const keyword = keywords[i];
-      
-      setAutoSaveProgress(prev => ({
-        ...prev,
-        current: i + 1,
-      }));
-
-      try {
-        await handleSave(keyword);
-        console.log(`키워드 저장 완료: ${keyword.keyword}`);
-        
-        setAutoSaveProgress(prev => ({
-          ...prev,
-          completed: prev.completed + 1,
-        }));
-      } catch (error) {
-        console.error(`키워드 저장 실패: ${keyword.keyword}`, error);
-        
-        setAutoSaveProgress(prev => ({
-          ...prev,
-          failed: prev.failed + 1,
-        }));
-      }
-
-      // 저장 간격을 두어 서버 부하 방지
-      if (i < keywords.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
-    }
-
-    setAutoSaveProgress(prev => ({
-      ...prev,
-      isActive: false,
-    }));
-
-    // 저장 완료 알림
-    const finalCompleted = autoSaveProgress.completed;
-    const finalFailed = autoSaveProgress.failed;
-    
-    if (finalCompleted > 0) {
-      setSaveNotification({
-        show: true,
-        message: `✅ ${finalCompleted}개 키워드가 자동으로 데이터베이스에 저장되었습니다${finalFailed > 0 ? ` (${finalFailed}개 실패)` : ''}`,
-        type: finalFailed > 0 ? 'error' : 'success',
-      });
-    }
-
-    // 3초 후 알림 자동 숨김
-    setTimeout(() => {
-      setSaveNotification(prev => ({ ...prev, show: false }));
-    }, 3000);
-
-    console.log(`연관키워드 자동 저장 완료: ${finalCompleted}개 성공, ${finalFailed}개 실패`);
-  };
   const handleSave = async (keyword: NaverKeyword) => {
     setIsSaving(true);
     try {
@@ -249,8 +163,8 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* 자동 저장 진행 상황 */}
-        {autoSaveProgress.isActive && (
+        {/* 백그라운드 자동 저장 진행 상황 */}
+        {saveProgress.isActive && (
           <div className="max-w-2xl mx-auto mb-8">
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <div className="flex items-center">
@@ -258,21 +172,22 @@ export default function HomePage() {
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
                 </div>
                 <div className="ml-3 flex-1">
-                  <h3 className="text-sm font-medium text-blue-800">연관키워드 자동 저장 및 문서수 수집 중...</h3>
+                  <h3 className="text-sm font-medium text-blue-800">백그라운드에서 자동 저장 중...</h3>
+                  <p className="text-xs text-blue-600 mt-1">페이지를 이동해도 저장이 계속됩니다</p>
                   <div className="mt-2">
                     <div className="flex justify-between text-sm text-blue-700 mb-1">
-                      <span>{autoSaveProgress.current} / {autoSaveProgress.total}</span>
-                      <span>{Math.round((autoSaveProgress.current / autoSaveProgress.total) * 100)}%</span>
+                      <span>{saveProgress.current} / {saveProgress.total}</span>
+                      <span>{Math.round((saveProgress.current / saveProgress.total) * 100)}%</span>
                     </div>
                     <div className="w-full bg-blue-200 rounded-full h-2">
                       <div 
                         className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${(autoSaveProgress.current / autoSaveProgress.total) * 100}%` }}
+                        style={{ width: `${(saveProgress.current / saveProgress.total) * 100}%` }}
                       ></div>
                     </div>
                     <div className="flex justify-between text-xs text-blue-600 mt-1">
-                      <span>성공: {autoSaveProgress.completed}</span>
-                      <span>실패: {autoSaveProgress.failed}</span>
+                      <span>성공: {saveProgress.completed}</span>
+                      <span>실패: {saveProgress.failed}</span>
                     </div>
                   </div>
                 </div>
@@ -328,7 +243,7 @@ export default function HomePage() {
               onFetchDocs={handleFetchDocs}
               isSaving={isSaving}
               isFetchingDocs={isFetchingDocs}
-              autoSaveProgress={autoSaveProgress}
+              autoSaveProgress={saveProgress}
             />
           </div>
         )}
@@ -354,7 +269,7 @@ export default function HomePage() {
                   <div className="text-4xl mb-4">💾</div>
                   <h3 className="text-lg font-semibold mb-2">2. 자동 저장</h3>
                   <p className="text-gray-600 text-sm">
-                    검색된 연관키워드가 자동으로 데이터베이스에 저장되고<br/>
+                    검색된 연관키워드가 백그라운드에서 자동으로 데이터베이스에 저장되고<br/>
                     <span className="text-blue-600 font-medium">카페, 블로그, 웹, 뉴스 문서수도 자동으로 수집됩니다</span>
                   </p>
                 </div>
