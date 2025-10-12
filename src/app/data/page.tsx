@@ -19,7 +19,6 @@ export default function DataPage() {
     isLoading,
     filters,
     filteredKeywords,
-    goldenKeywords,
     setKeywords,
     setLoading,
     setFilters,

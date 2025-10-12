@@ -48,7 +48,7 @@ export async function GET() {
     }
 
     const avgGoldenScore = avgData && avgData.length > 0
-      ? avgData.reduce((sum, item) => sum + ((item as any).golden_score || 0), 0) / avgData.length
+      ? avgData.reduce((sum, item) => sum + ((item as Record<string, unknown>).golden_score as number || 0), 0) / avgData.length
       : 0;
 
     return NextResponse.json({
