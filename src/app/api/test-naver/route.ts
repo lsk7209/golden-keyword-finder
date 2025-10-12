@@ -20,7 +20,8 @@ export async function GET(request: NextRequest) {
       showDetail: '1',
     });
 
-    const url = `${process.env.SEARCHAD_BASE_URL}${uri}?${params}`;
+    const baseUrl = process.env.SEARCHAD_BASE_URL || 'https://api.naver.com';
+    const url = `${baseUrl}${uri}?${params}`;
     const headers = getSearchAdHeaders('GET', uri);
 
     console.log('네이버 API 요청 URL:', url);

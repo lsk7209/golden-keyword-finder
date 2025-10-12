@@ -65,8 +65,16 @@ async function searchKeywordsBatch(
     const url = `${baseUrl}${uri}?${params}`;
     const headers = getSearchAdHeaders('GET', uri);
     
-    console.log('네이버 API 요청:', {
-      url,
+    console.log('네이버 API 요청 상세:', {
+      baseUrl,
+      uri,
+      fullUrl: url,
+      environmentVars: {
+        SEARCHAD_BASE_URL: process.env.SEARCHAD_BASE_URL || '미설정',
+        SEARCHAD_API_KEY: process.env.SEARCHAD_API_KEY ? '설정됨' : '미설정',
+        SEARCHAD_CUSTOMER_ID: process.env.SEARCHAD_CUSTOMER_ID ? '설정됨' : '미설정',
+        SEARCHAD_SECRET: process.env.SEARCHAD_SECRET ? '설정됨' : '미설정',
+      },
       headers: {
         'X-Timestamp': headers['X-Timestamp'],
         'X-API-KEY': headers['X-API-KEY'] ? '설정됨' : '미설정',
