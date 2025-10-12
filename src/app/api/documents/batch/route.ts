@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (existing) {
-        return supabase
+        const { error } = await supabase
           .from('keywords')
           .update({
             blog_count: result.blogCount,
@@ -48,6 +48,11 @@ export async function POST(request: NextRequest) {
             last_checked_at: new Date().toISOString(),
           })
           .eq('id', existing.id);
+
+        if (error) {
+          console.error(`키워드 업데이트 오류 (${result.keyword}):`, error);
+        }
+        return { success: !error, keyword: result.keyword };
       }
       return null;
     });

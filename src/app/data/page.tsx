@@ -78,7 +78,7 @@ export default function DataPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [setKeywords, setLoading]);
 
   const handleBulkDelete = async () => {
     if (selectedIds.length === 0) return;
