@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { FilterOptions } from '@/types/keyword';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -15,6 +15,25 @@ interface FilterSidebarProps {
 
 export function FilterSidebar({ filters, onFiltersChange }: FilterSidebarProps) {
   const [localFilters, setLocalFilters] = useState(filters);
+
+  // 디바운싱된 필터 적용
+  const debouncedApplyFilters = useCallback(
+    (() => {
+      let timeoutId: NodeJS.Timeout;
+      return (newFilters: FilterOptions) => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+          onFiltersChange(newFilters);
+        }, 300); // 300ms 디바운싱
+      };
+    })(),
+    [onFiltersChange]
+  );
+
+  // 로컬 필터가 변경될 때마다 디바운싱된 적용
+  useEffect(() => {
+    debouncedApplyFilters(localFilters);
+  }, [localFilters, debouncedApplyFilters]);
 
   const handleApplyFilters = () => {
     onFiltersChange(localFilters);

@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo, useRef } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { Keyword } from '@/types/keyword';
 import { formatNumber, formatDate, getCompetitionColor } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
@@ -25,39 +26,51 @@ export function SimpleKeywordTable({ keywords, isLoading, onRefresh }: SimpleKey
     }
   };
 
-  const sortedKeywords = [...keywords].sort((a, b) => {
-    // 기본 정렬: 총검색수 내림차순 + 카페문서수 오름차순
-    if (sortField === 'totalSearchVolume' && sortDirection === 'desc') {
-      // 총검색수 내림차순
-      const searchVolumeDiff = (b.totalSearchVolume || 0) - (a.totalSearchVolume || 0);
-      if (searchVolumeDiff !== 0) {
-        return searchVolumeDiff;
+  // 정렬된 키워드를 메모이제이션
+  const sortedKeywords = useMemo(() => {
+    return [...keywords].sort((a, b) => {
+      // 기본 정렬: 총검색수 내림차순 + 카페문서수 오름차순
+      if (sortField === 'totalSearchVolume' && sortDirection === 'desc') {
+        // 총검색수 내림차순
+        const searchVolumeDiff = (b.totalSearchVolume || 0) - (a.totalSearchVolume || 0);
+        if (searchVolumeDiff !== 0) {
+          return searchVolumeDiff;
+        }
+        // 총검색수가 같으면 카페문서수 오름차순
+        return (a.cafeCount || 0) - (b.cafeCount || 0);
       }
-      // 총검색수가 같으면 카페문서수 오름차순
-      return (a.cafeCount || 0) - (b.cafeCount || 0);
-    }
-    
-    // 다른 필드 정렬은 기존 로직 사용
-    const aValue = a[sortField];
-    const bValue = b[sortField];
-    
-    if (typeof aValue === 'string' && typeof bValue === 'string') {
-      return sortDirection === 'asc' 
-        ? aValue.localeCompare(bValue)
-        : bValue.localeCompare(aValue);
-    }
-    
-    if (typeof aValue === 'number' && typeof bValue === 'number') {
-      return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
-    }
-    
-    if (aValue instanceof Date && bValue instanceof Date) {
-      return sortDirection === 'asc' 
-        ? aValue.getTime() - bValue.getTime()
-        : bValue.getTime() - aValue.getTime();
-    }
-    
-    return 0;
+      
+      // 다른 필드 정렬은 기존 로직 사용
+      const aValue = a[sortField];
+      const bValue = b[sortField];
+      
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        return sortDirection === 'asc' 
+          ? aValue.localeCompare(bValue)
+          : bValue.localeCompare(aValue);
+      }
+      
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
+        return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
+      }
+      
+      if (aValue instanceof Date && bValue instanceof Date) {
+        return sortDirection === 'asc' 
+          ? aValue.getTime() - bValue.getTime()
+          : bValue.getTime() - aValue.getTime();
+      }
+      
+      return 0;
+    });
+  }, [keywords, sortField, sortDirection]);
+
+  // 가상화 설정
+  const parentRef = useRef<HTMLDivElement>(null);
+  const virtualizer = useVirtualizer({
+    count: sortedKeywords.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 50, // 각 행의 예상 높이
+    overscan: 10, // 화면 밖의 추가 렌더링할 행 수
   });
 
   if (isLoading) {
@@ -221,76 +234,109 @@ export function SimpleKeywordTable({ keywords, isLoading, onRefresh }: SimpleKey
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {sortedKeywords.map((keyword) => (
-              <tr key={keyword.id} className="hover:bg-gray-50">
-                <td className="px-3 py-3 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">
-                    {keyword.keyword}
-                  </div>
-                </td>
-                <td className="px-3 py-3 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">
-                    {formatNumber(keyword.totalSearchVolume || 0)}
-                  </div>
-                </td>
-                <td className="px-3 py-3 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">
-                    {formatNumber(keyword.cafeCount || 0)}
-                  </div>
-                </td>
-                <td className="px-3 py-3 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">
-                    {formatNumber(keyword.blogCount || 0)}
-                  </div>
-                </td>
-                <td className="px-3 py-3 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">
-                    {formatNumber(keyword.webCount || 0)}
-                  </div>
-                </td>
-                <td className="px-3 py-3 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">
-                    {formatNumber(keyword.newsCount || 0)}
-                  </div>
-                </td>
-                <td className="px-3 py-3 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">
-                    {formatNumber(keyword.monthlyPcQcCnt || 0)}
-                  </div>
-                </td>
-                <td className="px-3 py-3 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">
-                    {formatNumber(keyword.monthlyMobileQcCnt || 0)}
-                  </div>
-                </td>
-                <td className="px-3 py-3 whitespace-nowrap">
-                  <Badge 
-                    variant="outline" 
-                    className={getCompetitionColor(keyword.compIdx || '중간')}
+            <tr>
+              <td colSpan={13} className="p-0">
+                <div 
+                  ref={parentRef}
+                  className="h-96 overflow-auto"
+                  style={{ height: '400px' }}
+                >
+                  <div
+                    style={{
+                      height: `${virtualizer.getTotalSize()}px`,
+                      width: '100%',
+                      position: 'relative',
+                    }}
                   >
-                    {keyword.compIdx || '중간'}
-                  </Badge>
-                </td>
-                <td className="px-3 py-3 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">
-                    {(keyword.monthlyAvePcCtr || 0).toFixed(2)}%
+                    {virtualizer.getVirtualItems().map((virtualItem) => {
+                      const keyword = sortedKeywords[virtualItem.index];
+                      return (
+                        <div
+                          key={keyword.id}
+                          style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: `${virtualItem.size}px`,
+                            transform: `translateY(${virtualItem.start}px)`,
+                          }}
+                        >
+                          <div className="flex items-center border-b border-gray-200 hover:bg-gray-50">
+                            <div className="px-3 py-3 whitespace-nowrap w-32">
+                              <div className="text-sm font-medium text-gray-900">
+                                {keyword.keyword}
+                              </div>
+                            </div>
+                            <div className="px-3 py-3 whitespace-nowrap w-24">
+                              <div className="text-sm text-gray-900">
+                                {formatNumber(keyword.totalSearchVolume || 0)}
+                              </div>
+                            </div>
+                            <div className="px-3 py-3 whitespace-nowrap w-20">
+                              <div className="text-sm text-gray-900">
+                                {formatNumber(keyword.cafeCount || 0)}
+                              </div>
+                            </div>
+                            <div className="px-3 py-3 whitespace-nowrap w-20">
+                              <div className="text-sm text-gray-900">
+                                {formatNumber(keyword.blogCount || 0)}
+                              </div>
+                            </div>
+                            <div className="px-3 py-3 whitespace-nowrap w-20">
+                              <div className="text-sm text-gray-900">
+                                {formatNumber(keyword.webCount || 0)}
+                              </div>
+                            </div>
+                            <div className="px-3 py-3 whitespace-nowrap w-20">
+                              <div className="text-sm text-gray-900">
+                                {formatNumber(keyword.newsCount || 0)}
+                              </div>
+                            </div>
+                            <div className="px-3 py-3 whitespace-nowrap w-20">
+                              <div className="text-sm text-gray-900">
+                                {formatNumber(keyword.monthlyPcQcCnt || 0)}
+                              </div>
+                            </div>
+                            <div className="px-3 py-3 whitespace-nowrap w-24">
+                              <div className="text-sm text-gray-900">
+                                {formatNumber(keyword.monthlyMobileQcCnt || 0)}
+                              </div>
+                            </div>
+                            <div className="px-3 py-3 whitespace-nowrap w-16">
+                              <Badge 
+                                variant="outline" 
+                                className={getCompetitionColor(keyword.compIdx || '중간')}
+                              >
+                                {keyword.compIdx || '중간'}
+                              </Badge>
+                            </div>
+                            <div className="px-3 py-3 whitespace-nowrap w-16">
+                              <div className="text-sm text-gray-900">
+                                {(keyword.monthlyAvePcCtr || 0).toFixed(2)}%
+                              </div>
+                            </div>
+                            <div className="px-3 py-3 whitespace-nowrap w-20">
+                              <div className="text-sm text-gray-900">
+                                {(keyword.monthlyAveMobileCtr || 0).toFixed(2)}%
+                              </div>
+                            </div>
+                            <div className="px-3 py-3 whitespace-nowrap w-16">
+                              <div className="text-sm text-gray-900">
+                                {formatNumber(keyword.plAvgDepth || 0)}
+                              </div>
+                            </div>
+                            <div className="px-3 py-3 whitespace-nowrap w-24 text-sm text-gray-500">
+                              {formatDate(keyword.createdAt)}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                </td>
-                <td className="px-3 py-3 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">
-                    {(keyword.monthlyAveMobileCtr || 0).toFixed(2)}%
-                  </div>
-                </td>
-                <td className="px-3 py-3 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">
-                    {formatNumber(keyword.plAvgDepth || 0)}
-                  </div>
-                </td>
-                <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">
-                  {formatDate(keyword.createdAt)}
-                </td>
-              </tr>
-            ))}
+                </div>
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>
