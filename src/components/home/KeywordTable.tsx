@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { NaverKeyword } from '@/types/keyword';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowUpDown, Save, FileText, Loader2 } from 'lucide-react';
+import { ArrowUpDown, FileText, Loader2 } from 'lucide-react';
 import { formatNumber, getCompetitionColor } from '@/lib/utils';
 import { parseNaverNumber } from '@/lib/naver/keywords';
 
@@ -18,14 +18,13 @@ interface KeywordTableProps {
 
 export function KeywordTable({
   keywords,
-  onSave,
+  onSave: _onSave,
   onFetchDocs,
-  isSaving,
+  isSaving: _isSaving,
   isFetchingDocs,
 }: KeywordTableProps) {
   const [sortField, setSortField] = useState<keyof NaverKeyword>('keyword');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const [savingKeywords, setSavingKeywords] = useState<Set<string>>(new Set());
   const [fetchingKeywords, setFetchingKeywords] = useState<Set<string>>(new Set());
 
   const handleSort = (field: keyof NaverKeyword) => {
@@ -34,19 +33,6 @@ export function KeywordTable({
     } else {
       setSortField(field);
       setSortDirection('asc');
-    }
-  };
-
-  const handleSave = async (keyword: NaverKeyword) => {
-    setSavingKeywords(prev => new Set(prev).add(keyword.keyword));
-    try {
-      await onSave(keyword);
-    } finally {
-      setSavingKeywords(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(keyword.keyword);
-        return newSet;
-      });
     }
   };
 
@@ -64,8 +50,8 @@ export function KeywordTable({
   };
 
   const sortedKeywords = [...keywords].sort((a, b) => {
-    const aValue = (a as Record<string, unknown>)[sortField];
-    const bValue = (b as Record<string, unknown>)[sortField];
+    const aValue = (a as unknown as Record<string, unknown>)[sortField];
+    const bValue = (b as unknown as Record<string, unknown>)[sortField];
     
     if (typeof aValue === 'string' && typeof bValue === 'string') {
       return sortDirection === 'asc' 
@@ -157,7 +143,6 @@ export function KeywordTable({
             {sortedKeywords.map((keyword) => {
               const totalSearchVolume = parseNaverNumber(keyword.monthlyPcQcCnt) + parseNaverNumber(keyword.monthlyMobileQcCnt);
               const competitionColor = getCompetitionColor(keyword.compIdx);
-              const isSavingThis = savingKeywords.has(keyword.keyword);
               const isFetchingThis = fetchingKeywords.has(keyword.keyword);
 
               return (

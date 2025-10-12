@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getSearchAdHeaders } from '@/lib/naver/searchad';
 import { getDocumentCounts } from '@/lib/naver/documents';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // 환경변수 확인
     const envCheck = {
