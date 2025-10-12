@@ -38,6 +38,7 @@ export async function POST(request: NextRequest) {
           news_count: documentCounts.newsCount,
           last_checked_at: new Date().toISOString(),
         })
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .eq('id', (existing as any).id);
 
       if (error) {
