@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useKeywordStore } from '@/store/keyword-store';
 import { Keyword } from '@/types/keyword';
 import { supabase } from '@/lib/supabase/client';
-import { KeywordTable } from '@/components/data/KeywordTable';
+import { SimpleKeywordTable } from '@/components/data/SimpleKeywordTable';
 import { FilterSidebar } from '@/components/data/FilterSidebar';
 import { BulkActions } from '@/components/data/BulkActions';
 import { Button } from '@/components/ui/button';
@@ -435,14 +435,13 @@ export default function DataPage() {
           <h3 className="text-sm font-medium text-gray-700 mb-2">디버깅 정보</h3>
           <div className="text-xs text-gray-600 space-y-1">
             <p>전체 키워드: {keywords.length}개</p>
-            <p>필터링된 키워드: {filteredKeywords.length}개</p>
             <p>로딩 상태: {isLoading ? '로딩 중' : '완료'}</p>
+            <p>SimpleKeywordTable 사용 중</p>
             {keywords.length > 0 && (
               <div>
-                <p>첫 번째 키워드 샘플:</p>
-                <pre className="text-xs bg-white p-2 rounded border mt-1">
-                  {JSON.stringify(keywords[0], null, 2)}
-                </pre>
+                <p>첫 번째 키워드: {keywords[0].keyword}</p>
+                <p>검색량: {keywords[0].totalSearchVolume || 0}</p>
+                <p>경쟁도: {keywords[0].compIdx || '중간'}</p>
               </div>
             )}
           </div>
@@ -454,8 +453,8 @@ export default function DataPage() {
             <CardTitle>키워드 목록</CardTitle>
           </CardHeader>
           <CardContent>
-            <KeywordTable
-              keywords={filteredKeywords}
+            <SimpleKeywordTable
+              keywords={keywords}
               isLoading={isLoading}
               onRefresh={() => fetchKeywords()}
             />
