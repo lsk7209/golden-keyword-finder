@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
             news_count: result.newsCount,
             last_checked_at: new Date().toISOString(),
           })
-          .eq('id', existing.id);
+          .eq('id', (existing as any).id);
 
         if (error) {
           console.error(`키워드 업데이트 오류 (${result.keyword}):`, error);

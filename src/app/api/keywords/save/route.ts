@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
           comp_idx: keywordData.compIdx as '낮음' | '중간' | '높음',
           updated_at: now,
         })
-        .eq('id', existing.id)
+        .eq('id', (existing as any).id)
         .select()
         .single();
 
