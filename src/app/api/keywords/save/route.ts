@@ -6,6 +6,13 @@ import { parseNaverNumber } from '@/lib/naver/keywords';
 export async function POST(request: NextRequest) {
   try {
     const keywordData: NaverKeyword = await request.json();
+    
+    console.log('키워드 저장 요청:', {
+      keyword: keywordData.keyword,
+      monthlyPcQcCnt: keywordData.monthlyPcQcCnt,
+      monthlyMobileQcCnt: keywordData.monthlyMobileQcCnt,
+      compIdx: keywordData.compIdx
+    });
 
     if (!keywordData.keyword) {
       return NextResponse.json(
@@ -14,14 +21,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-        const supabase = await createClient();
+    const supabase = await createClient();
 
     // 중복 체크
-    const { data: existing } = await supabase
+    const { data: existing, error: checkError } = await supabase
       .from('keywords')
       .select('id')
       .eq('keyword', keywordData.keyword)
       .single();
+    
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.error('중복 체크 오류:', checkError);
+      throw checkError;
+    }
 
     const now = new Date().toISOString();
 
@@ -47,9 +59,11 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (error) {
+        console.error('키워드 업데이트 오류:', error);
         throw error;
       }
 
+      console.log('키워드 업데이트 성공:', data);
       return NextResponse.json({
         success: true,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -83,9 +97,11 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (error) {
+        console.error('키워드 삽입 오류:', error);
         throw error;
       }
 
+      console.log('키워드 삽입 성공:', data);
       return NextResponse.json({
         success: true,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any

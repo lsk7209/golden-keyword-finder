@@ -96,8 +96,9 @@ export const useKeywordStore = create<KeywordStore>((set, get) => ({
         return false;
       }
       
-      // 황금점수 범위
-      if (keyword.goldenScore < filters.goldenScoreRange[0] || keyword.goldenScore > filters.goldenScoreRange[1]) {
+      // 황금점수 범위 (null/undefined 처리)
+      const goldenScore = keyword.goldenScore ?? 0;
+      if (goldenScore < filters.goldenScoreRange[0] || goldenScore > filters.goldenScoreRange[1]) {
         return false;
       }
       
@@ -106,13 +107,15 @@ export const useKeywordStore = create<KeywordStore>((set, get) => ({
         return false;
       }
       
-      // 검색량 범위
-      if (keyword.totalSearchVolume < filters.searchVolumeMin || keyword.totalSearchVolume > filters.searchVolumeMax) {
+      // 검색량 범위 (null/undefined 처리)
+      const totalSearchVolume = keyword.totalSearchVolume ?? 0;
+      if (totalSearchVolume < filters.searchVolumeMin || totalSearchVolume > filters.searchVolumeMax) {
         return false;
       }
       
-      // 문서수 최대값
-      if (keyword.totalDocCount > filters.docCountMax) {
+      // 문서수 최대값 (null/undefined 처리)
+      const totalDocCount = keyword.totalDocCount ?? 0;
+      if (totalDocCount > filters.docCountMax) {
         return false;
       }
       
@@ -122,8 +125,9 @@ export const useKeywordStore = create<KeywordStore>((set, get) => ({
         return false;
       }
       
-      // 태그
-      if (filters.tags.length > 0 && !filters.tags.some(tag => keyword.tags.includes(tag))) {
+      // 태그 (null/undefined 처리)
+      const tags = keyword.tags ?? [];
+      if (filters.tags.length > 0 && !filters.tags.some(tag => tags.includes(tag))) {
         return false;
       }
       

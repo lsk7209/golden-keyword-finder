@@ -430,6 +430,24 @@ export default function DataPage() {
           </div>
         )}
 
+        {/* 디버깅 정보 */}
+        <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+          <h3 className="text-sm font-medium text-gray-700 mb-2">디버깅 정보</h3>
+          <div className="text-xs text-gray-600 space-y-1">
+            <p>전체 키워드: {keywords.length}개</p>
+            <p>필터링된 키워드: {filteredKeywords.length}개</p>
+            <p>로딩 상태: {isLoading ? '로딩 중' : '완료'}</p>
+            {keywords.length > 0 && (
+              <div>
+                <p>첫 번째 키워드 샘플:</p>
+                <pre className="text-xs bg-white p-2 rounded border mt-1">
+                  {JSON.stringify(keywords[0], null, 2)}
+                </pre>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* 키워드 테이블 */}
         <Card>
           <CardHeader>
