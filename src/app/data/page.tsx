@@ -172,7 +172,7 @@ export default function DataPage() {
       console.error('배치 문서수 조회 오류:', error);
       alert('배치 문서수 조회 중 오류가 발생했습니다.');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
