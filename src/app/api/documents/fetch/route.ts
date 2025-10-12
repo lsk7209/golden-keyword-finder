@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     if (existing) {
       const { error } = await supabase
         .from('keywords')
-        // @ts-ignore - Supabase 타입 정의 문제로 인한 임시 해결
+        // @ts-expect-error - Supabase 타입 정의 문제로 인한 임시 해결
         .update({
           blog_count: documentCounts.blogCount,
           cafe_count: documentCounts.cafeCount,

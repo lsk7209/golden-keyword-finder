@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
       // 업데이트
       const { data, error } = await supabase
         .from('keywords')
-        // @ts-ignore - Supabase 타입 정의 문제로 인한 임시 해결
+        // @ts-expect-error - Supabase 타입 정의 문제로 인한 임시 해결
         .update({
           monthly_pc_qc_cnt: parseNaverNumber(keywordData.monthlyPcQcCnt),
           monthly_mobile_qc_cnt: parseNaverNumber(keywordData.monthlyMobileQcCnt),
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
       // 새로 삽입
       const { data, error } = await supabase
         .from('keywords')
-        // @ts-ignore - Supabase 타입 정의 문제로 인한 임시 해결
+        // @ts-expect-error - Supabase 타입 정의 문제로 인한 임시 해결
         .insert({
           keyword: keywordData.keyword,
           monthly_pc_qc_cnt: parseNaverNumber(keywordData.monthlyPcQcCnt),
