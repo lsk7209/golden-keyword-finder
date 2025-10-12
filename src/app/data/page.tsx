@@ -41,7 +41,8 @@ export default function DataPage() {
       }
 
       if (data) {
-        const keywords: Keyword[] = data.map(item => ({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const keywords: Keyword[] = data.map((item: any) => ({
           id: item.id,
           keyword: item.keyword,
           monthlyPcQcCnt: item.monthly_pc_qc_cnt,
