@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDocumentCounts, NaverApiUsageMonitor } from '@/lib/naver/documents';
-import { supabase } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,8 +19,9 @@ export async function POST(request: NextRequest) {
     // 문서수 조회
     const documentCounts = await getDocumentCounts(keyword);
 
-    // 데이터베이스 업데이트
-    const { data: existing } = await supabase
+        // 데이터베이스 업데이트
+        const supabase = createClient();
+        const { data: existing } = await supabase
       .from('keywords')
       .select('id')
       .eq('keyword', keyword)

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase/server';
 import { NaverKeyword } from '@/types/keyword';
 import { parseNaverNumber } from '@/lib/naver/keywords';
 
@@ -13,6 +13,8 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    const supabase = createClient();
 
     // 중복 체크
     const { data: existing } = await supabase
