@@ -10,17 +10,17 @@ import { parseNaverNumber } from '@/lib/naver/keywords';
 
 interface KeywordTableProps {
   keywords: NaverKeyword[];
-  onSave: (keyword: NaverKeyword) => Promise<void>;
+  onSave?: (keyword: NaverKeyword) => Promise<void>;
   onFetchDocs: (keyword: string) => Promise<void>;
-  isSaving: boolean;
+  isSaving?: boolean;
   isFetchingDocs: boolean;
 }
 
 export function KeywordTable({
   keywords,
-  onSave: _onSave,
+  onSave,
   onFetchDocs,
-  isSaving: _isSaving,
+  isSaving,
   isFetchingDocs,
 }: KeywordTableProps) {
   const [sortField, setSortField] = useState<keyof NaverKeyword>('keyword');

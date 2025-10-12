@@ -226,14 +226,15 @@ export default function DataPage() {
     }
   };
 
-  const localStats = {
-    total: keywords.length,
-    filtered: filteredKeywords.length,
-    golden: goldenKeywords.length,
-    avgGoldenScore: filteredKeywords.length > 0 
-      ? (filteredKeywords.reduce((sum, k) => sum + k.goldenScore, 0) / filteredKeywords.length).toFixed(2)
-      : 0,
-  };
+  // 로컬 통계는 현재 사용하지 않음 (서버 통계 사용)
+  // const localStats = {
+  //   total: keywords.length,
+  //   filtered: filteredKeywords.length,
+  //   golden: goldenKeywords.length,
+  //   avgGoldenScore: filteredKeywords.length > 0 
+  //     ? (filteredKeywords.reduce((sum, k) => sum + k.goldenScore, 0) / filteredKeywords.length).toFixed(2)
+  //     : 0,
+  // };
 
   return (
     <div className="min-h-screen bg-gray-50">
