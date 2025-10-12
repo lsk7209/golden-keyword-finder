@@ -29,12 +29,12 @@ interface KeywordStore {
 
 const defaultFilters: FilterOptions = {
   searchTerm: '',
-  goldenScoreRange: [0, 999999], // 더 넓은 범위로 설정
+  goldenScoreRange: [0, 999999999], // 매우 넓은 범위로 설정
   competitionLevels: ['낮음', '중간', '높음'],
   searchVolumeMin: 0,
-  searchVolumeMax: 999999999, // 더 넓은 범위로 설정
-  docCountMax: 999999999, // 더 넓은 범위로 설정
-  // 문서수 범위 필터
+  searchVolumeMax: 999999999, // 매우 넓은 범위로 설정
+  docCountMax: 999999999, // 매우 넓은 범위로 설정
+  // 문서수 범위 필터 - 매우 넓은 범위로 설정
   cafeCountMin: 0,
   cafeCountMax: 999999999,
   blogCountMin: 0,
@@ -108,28 +108,24 @@ export const useKeywordStore = create<KeywordStore>((set, get) => ({
       // 황금점수 범위 (null/undefined 처리)
       const goldenScore = keyword.goldenScore ?? 0;
       if (goldenScore < filters.goldenScoreRange[0] || goldenScore > filters.goldenScoreRange[1]) {
-        console.log(`키워드 ${keyword.keyword} 필터링됨: 황금점수 ${goldenScore}이 범위 [${filters.goldenScoreRange[0]}, ${filters.goldenScoreRange[1]}] 밖`);
         return false;
       }
       
       // 경쟁도 (null/undefined 처리)
       const compIdx = keyword.compIdx ?? '중간';
       if (!filters.competitionLevels.includes(compIdx)) {
-        console.log(`키워드 ${keyword.keyword} 필터링됨: 경쟁도 ${compIdx}이 허용 목록 [${filters.competitionLevels.join(', ')}]에 없음`);
         return false;
       }
       
       // 검색량 범위 (null/undefined 처리)
       const totalSearchVolume = keyword.totalSearchVolume ?? 0;
       if (totalSearchVolume < filters.searchVolumeMin || totalSearchVolume > filters.searchVolumeMax) {
-        console.log(`키워드 ${keyword.keyword} 필터링됨: 검색량 ${totalSearchVolume}이 범위 [${filters.searchVolumeMin}, ${filters.searchVolumeMax}] 밖`);
         return false;
       }
       
       // 문서수 최대값 (null/undefined 처리)
       const totalDocCount = keyword.totalDocCount ?? 0;
       if (totalDocCount > filters.docCountMax) {
-        console.log(`키워드 ${keyword.keyword} 필터링됨: 문서수 ${totalDocCount}이 최대값 ${filters.docCountMax} 초과`);
         return false;
       }
       

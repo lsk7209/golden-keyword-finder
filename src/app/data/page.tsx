@@ -437,7 +437,7 @@ export default function DataPage() {
             <p>전체 키워드: {keywords.length}개</p>
             <p>필터링된 키워드: {filteredKeywords.length}개</p>
             <p>로딩 상태: {isLoading ? '로딩 중' : '완료'}</p>
-            <p>SimpleKeywordTable + 필터링 사용 중</p>
+            <p>SimpleKeywordTable 사용 중 (필터링 임시 비활성화)</p>
             {keywords.length > 0 && (
               <div>
                 <p>첫 번째 키워드: {keywords[0].keyword}</p>
@@ -455,7 +455,7 @@ export default function DataPage() {
           </CardHeader>
           <CardContent>
             <SimpleKeywordTable
-              keywords={filteredKeywords}
+              keywords={keywords}
               isLoading={isLoading}
               onRefresh={() => fetchKeywords()}
             />
