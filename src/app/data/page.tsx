@@ -28,10 +28,6 @@ export default function DataPage() {
 
   const [showFilters, setShowFilters] = useState(false);
 
-  useEffect(() => {
-    fetchKeywords();
-  }, [fetchKeywords]);
-
   const fetchKeywords = useCallback(async () => {
     setLoading(true);
     try {
@@ -79,6 +75,10 @@ export default function DataPage() {
       setLoading(false);
     }
   }, [setKeywords, setLoading]);
+
+  useEffect(() => {
+    fetchKeywords();
+  }, [fetchKeywords]);
 
   const handleBulkDelete = async () => {
     if (selectedIds.length === 0) return;
