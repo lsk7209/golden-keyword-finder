@@ -114,7 +114,7 @@ export default function DataPage() {
   useEffect(() => {
     fetchKeywords();
     fetchStats();
-  }, [fetchKeywords, fetchStats]);
+  }, []); // 의존성 배열을 비워서 초기 로드 시에만 실행
 
   // 자동 새로고침 기능
   useEffect(() => {
@@ -136,7 +136,7 @@ export default function DataPage() {
         clearInterval(autoRefreshInterval.current);
       }
     };
-  }, [isAutoRefresh, fetchKeywords, fetchStats]);
+  }, [isAutoRefresh]); // fetchKeywords, fetchStats 의존성 제거
 
   const handleBulkDelete = async () => {
     if (selectedIds.length === 0) return;
