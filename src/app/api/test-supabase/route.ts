@@ -25,9 +25,9 @@ export async function GET() {
     }
 
     // 3. 키워드 테이블에서 데이터 조회
-    const { data: keywords, error: keywordError, count } = await supabase
+    const { data: keywords, error: keywordError } = await supabase
       .from('keywords')
-      .select('*', { count: 'exact' })
+      .select('*')
       .limit(5);
 
     if (keywordError) {
@@ -40,7 +40,7 @@ export async function GET() {
     }
 
     // 4. 통계 조회
-    const { count: totalCount, error: countError } = await supabase
+    const { count: totalCount } = await supabase
       .from('keywords')
       .select('*', { count: 'exact', head: true });
 

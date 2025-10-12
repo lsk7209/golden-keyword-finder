@@ -28,6 +28,7 @@ export async function POST() {
 
     const { data, error } = await supabase
       .from('keywords')
+      // @ts-expect-error - Supabase 타입 정의 문제로 인한 임시 해결
       .insert(testKeyword)
       .select()
       .single();

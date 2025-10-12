@@ -25,9 +25,9 @@ interface KeywordTableProps {
 
 export function KeywordTable({
   keywords,
-  onSave: _onSave,
+  onSave,
   onFetchDocs,
-  isSaving: _isSaving,
+  isSaving,
   isFetchingDocs,
   autoSaveProgress,
 }: KeywordTableProps) {
