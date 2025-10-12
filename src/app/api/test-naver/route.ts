@@ -1,14 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSearchAdHeaders } from '@/lib/naver/searchad';
+import { getDocumentCounts } from '@/lib/naver/documents';
 
 export async function GET(request: NextRequest) {
   try {
     // 환경변수 확인
     const envCheck = {
+      // 네이버 검색광고 API
       SEARCHAD_API_KEY: process.env.SEARCHAD_API_KEY ? '설정됨' : '미설정',
       SEARCHAD_CUSTOMER_ID: process.env.SEARCHAD_CUSTOMER_ID ? '설정됨' : '미설정',
       SEARCHAD_SECRET: process.env.SEARCHAD_SECRET ? '설정됨' : '미설정',
       SEARCHAD_BASE_URL: process.env.SEARCHAD_BASE_URL || '미설정',
+      // 네이버 오픈 API
+      NAVER_CLIENT_ID: process.env.NAVER_CLIENT_ID ? '설정됨' : '미설정',
+      NAVER_CLIENT_SECRET: process.env.NAVER_CLIENT_SECRET ? '설정됨' : '미설정',
+      NAVER_OPENAPI_BASE_URL: process.env.NAVER_OPENAPI_BASE_URL || '미설정',
     };
 
     console.log('환경변수 상태:', envCheck);
@@ -37,16 +43,28 @@ export async function GET(request: NextRequest) {
       headers,
     });
 
-    console.log('네이버 API 응답 상태:', response.status, response.statusText);
+    console.log('네이버 검색광고 API 응답 상태:', response.status, response.statusText);
 
-    let responseData;
+    let searchAdResponseData;
     if (response.ok) {
-      responseData = await response.json();
-      console.log('네이버 API 응답 데이터:', JSON.stringify(responseData, null, 2));
+      searchAdResponseData = await response.json();
+      console.log('네이버 검색광고 API 응답 데이터:', JSON.stringify(searchAdResponseData, null, 2));
     } else {
       const errorText = await response.text();
-      console.error('네이버 API 오류 응답:', errorText);
-      responseData = { error: errorText };
+      console.error('네이버 검색광고 API 오류 응답:', errorText);
+      searchAdResponseData = { error: errorText };
+    }
+
+    // 네이버 오픈 API 테스트 (문서수 조회)
+    console.log('네이버 오픈 API 테스트 시작...');
+    let openApiResponseData;
+    try {
+      const documentCounts = await getDocumentCounts('홍대갈만한곳');
+      openApiResponseData = { success: true, data: documentCounts };
+      console.log('네이버 오픈 API 응답:', documentCounts);
+    } catch (error) {
+      console.error('네이버 오픈 API 오류:', error);
+      openApiResponseData = { success: false, error: error instanceof Error ? error.message : '알 수 없는 오류' };
     }
 
     return NextResponse.json({
@@ -62,10 +80,13 @@ export async function GET(request: NextRequest) {
             'X-Signature': headers['X-Signature'] ? '설정됨' : '미설정',
           },
         },
-        response: {
+        searchAdApi: {
           status: response.status,
           statusText: response.statusText,
-          data: responseData,
+          data: searchAdResponseData,
+        },
+        openApi: {
+          data: openApiResponseData,
         },
       },
     });

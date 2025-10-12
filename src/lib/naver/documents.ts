@@ -63,29 +63,44 @@ export async function fetchWithRetry(
   throw new Error('Max retries exceeded');
 }
 
-/**
- * 단일 서비스 문서수 조회
- */
-async function fetchServiceCount(
-  service: 'blog' | 'cafearticle' | 'webkr' | 'news',
-  keyword: string
-): Promise<number> {
-  const headers = {
-    'X-Naver-Client-Id': process.env.NAVER_CLIENT_ID!,
-    'X-Naver-Client-Secret': process.env.NAVER_CLIENT_SECRET!,
-  };
-  
-  const encodedKeyword = encodeURIComponent(keyword);
-  const url = `${process.env.NAVER_OPENAPI_BASE_URL}/v1/search/${service}.json?query=${encodedKeyword}&display=1`;
-  
-  try {
-    const data = await fetchWithRetry(url, headers);
-    return data.total || 0;
-  } catch (error) {
-    console.error(`Failed to fetch ${service} count for "${keyword}":`, error);
-    return 0;
-  }
-}
+    /**
+     * 단일 서비스 문서수 조회
+     * 네이버 오픈 API: https://openapi.naver.com/v1/search/{service}.json
+     */
+    async function fetchServiceCount(
+      service: 'blog' | 'cafearticle' | 'webkr' | 'news',
+      keyword: string
+    ): Promise<number> {
+      const headers = {
+        'X-Naver-Client-Id': process.env.NAVER_CLIENT_ID!,
+        'X-Naver-Client-Secret': process.env.NAVER_CLIENT_SECRET!,
+      };
+      
+      const baseUrl = process.env.NAVER_OPENAPI_BASE_URL || 'https://openapi.naver.com';
+      const encodedKeyword = encodeURIComponent(keyword);
+      const url = `${baseUrl}/v1/search/${service}.json?query=${encodedKeyword}&display=1`;
+      
+      console.log(`네이버 오픈 API 요청: ${service}`, {
+        url,
+        keyword,
+        encodedKeyword,
+        baseUrl,
+        environmentVars: {
+          NAVER_CLIENT_ID: process.env.NAVER_CLIENT_ID ? '설정됨' : '미설정',
+          NAVER_CLIENT_SECRET: process.env.NAVER_CLIENT_SECRET ? '설정됨' : '미설정',
+          NAVER_OPENAPI_BASE_URL: process.env.NAVER_OPENAPI_BASE_URL || '미설정',
+        },
+      });
+      
+      try {
+        const data = await fetchWithRetry(url, headers);
+        console.log(`${service} 응답:`, { total: data.total, keyword });
+        return data.total || 0;
+      } catch (error) {
+        console.error(`Failed to fetch ${service} count for "${keyword}":`, error);
+        return 0;
+      }
+    }
 
 /**
  * 키워드별 문서수 조회 (병렬 처리)
