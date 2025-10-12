@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useKeywordStore } from '@/store/keyword-store';
 import { Keyword } from '@/types/keyword';
 import { supabase } from '@/lib/supabase/client';
@@ -32,7 +32,7 @@ export default function DataPage() {
     fetchKeywords();
   }, [fetchKeywords]);
 
-  const fetchKeywords = async () => {
+  const fetchKeywords = useCallback(async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -78,7 +78,7 @@ export default function DataPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const handleBulkDelete = async () => {
     if (selectedIds.length === 0) return;

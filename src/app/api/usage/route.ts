@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { NaverApiUsageMonitor } from '@/lib/naver/documents';
 
 export async function GET() {
