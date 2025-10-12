@@ -258,7 +258,7 @@ export default function HomePage() {
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
                 </div>
                 <div className="ml-3 flex-1">
-                  <h3 className="text-sm font-medium text-blue-800">연관키워드 자동 저장 중...</h3>
+                  <h3 className="text-sm font-medium text-blue-800">연관키워드 자동 저장 및 문서수 수집 중...</h3>
                   <div className="mt-2">
                     <div className="flex justify-between text-sm text-blue-700 mb-1">
                       <span>{autoSaveProgress.current} / {autoSaveProgress.total}</span>
@@ -354,8 +354,8 @@ export default function HomePage() {
                   <div className="text-4xl mb-4">💾</div>
                   <h3 className="text-lg font-semibold mb-2">2. 자동 저장</h3>
                   <p className="text-gray-600 text-sm">
-                    검색된 연관키워드가 자동으로 데이터베이스에 저장됩니다<br/>
-                    <span className="text-blue-600 font-medium">진행 상황과 결과를 실시간으로 확인하세요</span>
+                    검색된 연관키워드가 자동으로 데이터베이스에 저장되고<br/>
+                    <span className="text-blue-600 font-medium">카페, 블로그, 웹, 뉴스 문서수도 자동으로 수집됩니다</span>
                   </p>
                 </div>
                 

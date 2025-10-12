@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { NaverKeyword } from '@/types/keyword';
 import { parseNaverNumber } from '@/lib/naver/keywords';
+import { getDocumentCounts, NaverApiUsageMonitor } from '@/lib/naver/documents';
 
 export async function POST(request: NextRequest) {
   try {
@@ -45,6 +46,26 @@ export async function POST(request: NextRequest) {
 
     const now = new Date().toISOString();
 
+    // 문서수 자동 수집
+    let documentCounts = {
+      blogCount: 0,
+      cafeCount: 0,
+      webCount: 0,
+      newsCount: 0,
+    };
+
+    try {
+      console.log(`문서수 자동 수집 시작: ${keywordData.keyword}`);
+      // API 사용량 모니터링 (4개 서비스 호출)
+      NaverApiUsageMonitor.incrementUsage(4);
+      
+      documentCounts = await getDocumentCounts(keywordData.keyword);
+      console.log(`문서수 수집 완료:`, documentCounts);
+    } catch (docError) {
+      console.error('문서수 수집 실패:', docError);
+      // 문서수 수집 실패해도 키워드 저장은 계속 진행
+    }
+
     if (existing) {
       // 업데이트
       const { data, error } = await supabase
@@ -59,6 +80,11 @@ export async function POST(request: NextRequest) {
           monthly_ave_mobile_ctr: parseFloat(keywordData.monthlyAveMobileCtr) || 0,
           pl_avg_depth: parseNaverNumber(keywordData.plAvgDepth),
           comp_idx: keywordData.compIdx as '낮음' | '중간' | '높음',
+          blog_count: documentCounts.blogCount,
+          cafe_count: documentCounts.cafeCount,
+          web_count: documentCounts.webCount,
+          news_count: documentCounts.newsCount,
+          last_checked_at: now,
           updated_at: now,
         })
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -75,7 +101,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        data: { id: (data as any).id, action: 'updated' },
+        data: { 
+          id: (data as any).id, 
+          action: 'updated',
+          documentCounts,
+          apiUsage: {
+            count: NaverApiUsageMonitor.getUsageCount(),
+            percentage: NaverApiUsageMonitor.getUsagePercentage(),
+          },
+        },
       });
     } else {
       // 새로 삽입
@@ -92,10 +126,11 @@ export async function POST(request: NextRequest) {
           monthly_ave_mobile_ctr: parseFloat(keywordData.monthlyAveMobileCtr) || 0,
           pl_avg_depth: parseNaverNumber(keywordData.plAvgDepth),
           comp_idx: keywordData.compIdx as '낮음' | '중간' | '높음',
-          blog_count: 0,
-          cafe_count: 0,
-          web_count: 0,
-          news_count: 0,
+          blog_count: documentCounts.blogCount,
+          cafe_count: documentCounts.cafeCount,
+          web_count: documentCounts.webCount,
+          news_count: documentCounts.newsCount,
+          last_checked_at: now,
           tags: [],
           is_favorite: false,
           created_at: now,
@@ -113,7 +148,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        data: { id: (data as any).id, action: 'created' },
+        data: { 
+          id: (data as any).id, 
+          action: 'created',
+          documentCounts,
+          apiUsage: {
+            count: NaverApiUsageMonitor.getUsageCount(),
+            percentage: NaverApiUsageMonitor.getUsagePercentage(),
+          },
+        },
       });
     }
 
