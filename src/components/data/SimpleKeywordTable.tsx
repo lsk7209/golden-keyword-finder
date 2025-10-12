@@ -90,7 +90,7 @@ export function SimpleKeywordTable({ keywords, isLoading, onRefresh }: SimpleKey
           <thead className="bg-gray-50">
             <tr>
               <th 
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                 onClick={() => handleSort('keyword')}
               >
                 키워드
@@ -99,16 +99,70 @@ export function SimpleKeywordTable({ keywords, isLoading, onRefresh }: SimpleKey
                 )}
               </th>
               <th 
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                 onClick={() => handleSort('totalSearchVolume')}
               >
-                검색량
+                총 검색수
                 {sortField === 'totalSearchVolume' && (
                   <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
                 )}
               </th>
               <th 
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                onClick={() => handleSort('cafeCount')}
+              >
+                카페문서수
+                {sortField === 'cafeCount' && (
+                  <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                )}
+              </th>
+              <th 
+                className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                onClick={() => handleSort('blogCount')}
+              >
+                블로그문서수
+                {sortField === 'blogCount' && (
+                  <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                )}
+              </th>
+              <th 
+                className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                onClick={() => handleSort('webCount')}
+              >
+                웹문서수
+                {sortField === 'webCount' && (
+                  <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                )}
+              </th>
+              <th 
+                className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                onClick={() => handleSort('newsCount')}
+              >
+                뉴스문서수
+                {sortField === 'newsCount' && (
+                  <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                )}
+              </th>
+              <th 
+                className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                onClick={() => handleSort('monthlyPcQcCnt')}
+              >
+                PC 검색수
+                {sortField === 'monthlyPcQcCnt' && (
+                  <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                )}
+              </th>
+              <th 
+                className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                onClick={() => handleSort('monthlyMobileQcCnt')}
+              >
+                모바일 검색수
+                {sortField === 'monthlyMobileQcCnt' && (
+                  <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                )}
+              </th>
+              <th 
+                className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                 onClick={() => handleSort('compIdx')}
               >
                 경쟁도
@@ -117,16 +171,34 @@ export function SimpleKeywordTable({ keywords, isLoading, onRefresh }: SimpleKey
                 )}
               </th>
               <th 
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                onClick={() => handleSort('goldenScore')}
+                className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                onClick={() => handleSort('monthlyAvePcCtr')}
               >
-                황금점수
-                {sortField === 'goldenScore' && (
+                PC CTR
+                {sortField === 'monthlyAvePcCtr' && (
                   <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
                 )}
               </th>
               <th 
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                onClick={() => handleSort('monthlyAveMobileCtr')}
+              >
+                모바일 CTR
+                {sortField === 'monthlyAveMobileCtr' && (
+                  <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                )}
+              </th>
+              <th 
+                className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                onClick={() => handleSort('plAvgDepth')}
+              >
+                광고수
+                {sortField === 'plAvgDepth' && (
+                  <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                )}
+              </th>
+              <th 
+                className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                 onClick={() => handleSort('createdAt')}
               >
                 저장일
@@ -139,17 +211,47 @@ export function SimpleKeywordTable({ keywords, isLoading, onRefresh }: SimpleKey
           <tbody className="bg-white divide-y divide-gray-200">
             {sortedKeywords.map((keyword) => (
               <tr key={keyword.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-3 py-3 whitespace-nowrap">
                   <div className="text-sm font-medium text-gray-900">
                     {keyword.keyword}
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-3 py-3 whitespace-nowrap">
                   <div className="text-sm text-gray-900">
                     {formatNumber(keyword.totalSearchVolume || 0)}
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-3 py-3 whitespace-nowrap">
+                  <div className="text-sm text-gray-900">
+                    {formatNumber(keyword.cafeCount || 0)}
+                  </div>
+                </td>
+                <td className="px-3 py-3 whitespace-nowrap">
+                  <div className="text-sm text-gray-900">
+                    {formatNumber(keyword.blogCount || 0)}
+                  </div>
+                </td>
+                <td className="px-3 py-3 whitespace-nowrap">
+                  <div className="text-sm text-gray-900">
+                    {formatNumber(keyword.webCount || 0)}
+                  </div>
+                </td>
+                <td className="px-3 py-3 whitespace-nowrap">
+                  <div className="text-sm text-gray-900">
+                    {formatNumber(keyword.newsCount || 0)}
+                  </div>
+                </td>
+                <td className="px-3 py-3 whitespace-nowrap">
+                  <div className="text-sm text-gray-900">
+                    {formatNumber(keyword.monthlyPcQcCnt || 0)}
+                  </div>
+                </td>
+                <td className="px-3 py-3 whitespace-nowrap">
+                  <div className="text-sm text-gray-900">
+                    {formatNumber(keyword.monthlyMobileQcCnt || 0)}
+                  </div>
+                </td>
+                <td className="px-3 py-3 whitespace-nowrap">
                   <Badge 
                     variant="outline" 
                     className={getCompetitionColor(keyword.compIdx || '중간')}
@@ -157,12 +259,22 @@ export function SimpleKeywordTable({ keywords, isLoading, onRefresh }: SimpleKey
                     {keyword.compIdx || '중간'}
                   </Badge>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-3 py-3 whitespace-nowrap">
                   <div className="text-sm text-gray-900">
-                    {keyword.goldenScore ? keyword.goldenScore.toFixed(2) : '0.00'}
+                    {(keyword.monthlyAvePcCtr || 0).toFixed(2)}%
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td className="px-3 py-3 whitespace-nowrap">
+                  <div className="text-sm text-gray-900">
+                    {(keyword.monthlyAveMobileCtr || 0).toFixed(2)}%
+                  </div>
+                </td>
+                <td className="px-3 py-3 whitespace-nowrap">
+                  <div className="text-sm text-gray-900">
+                    {formatNumber(keyword.plAvgDepth || 0)}
+                  </div>
+                </td>
+                <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">
                   {formatDate(keyword.createdAt)}
                 </td>
               </tr>
