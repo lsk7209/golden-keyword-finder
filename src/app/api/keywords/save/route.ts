@@ -5,6 +5,12 @@ import { parseNaverNumber } from '@/lib/naver/keywords';
 
 export async function POST(request: NextRequest) {
   try {
+    // 환경변수 확인
+    console.log('환경변수 확인:', {
+      SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL ? '설정됨' : '미설정',
+      SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '설정됨' : '미설정',
+    });
+
     const keywordData: NaverKeyword = await request.json();
     
     console.log('키워드 저장 요청:', {
@@ -21,7 +27,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    console.log('Supabase 클라이언트 생성 시작...');
     const supabase = await createClient();
+    console.log('Supabase 클라이언트 생성 완료');
 
     // 중복 체크
     const { data: existing, error: checkError } = await supabase
