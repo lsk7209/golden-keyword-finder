@@ -145,7 +145,7 @@ export default function DataPage() {
     const keywordsToFetch = selectedKeywords.map(k => k.keyword);
 
     try {
-      setIsLoading(true);
+      setLoading(true);
       
       const response = await fetch('/api/documents/batch', {
         method: 'POST',
