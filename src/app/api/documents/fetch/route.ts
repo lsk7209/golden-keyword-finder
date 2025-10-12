@@ -30,14 +30,14 @@ export async function POST(request: NextRequest) {
     if (existing) {
       const { error } = await supabase
         .from('keywords')
+        // @ts-ignore - Supabase 타입 정의 문제로 인한 임시 해결
         .update({
           blog_count: documentCounts.blogCount,
           cafe_count: documentCounts.cafeCount,
           web_count: documentCounts.webCount,
           news_count: documentCounts.newsCount,
           last_checked_at: new Date().toISOString(),
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } as any)
+        })
         .eq('id', existing.id);
 
       if (error) {
