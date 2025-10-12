@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
           web_count: documentCounts.webCount,
           news_count: documentCounts.newsCount,
           last_checked_at: new Date().toISOString(),
-        })
+        } as any)
         .eq('id', existing.id);
 
       if (error) {
