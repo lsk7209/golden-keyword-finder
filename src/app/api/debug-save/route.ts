@@ -61,7 +61,8 @@ export async function POST() {
           monthly_mobile_qc_cnt: testData.monthly_mobile_qc_cnt,
           updated_at: now,
         })
-        .eq('id', existing.id)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .eq('id', (existing as any).id)
         .select()
         .single();
 
