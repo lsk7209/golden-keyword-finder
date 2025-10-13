@@ -14,6 +14,7 @@ interface AutoCollectSectionProps {
   targetCount: number;
   currentSeedKeywords: string[];
   collectedKeywords: string[];
+  usedSeedKeywords?: Set<string>;
 }
 
 export function AutoCollectSection({
@@ -24,6 +25,7 @@ export function AutoCollectSection({
   targetCount,
   currentSeedKeywords,
   collectedKeywords,
+  usedSeedKeywords = new Set(),
 }: AutoCollectSectionProps) {
   const [targetInput, setTargetInput] = useState(100);
 
@@ -100,6 +102,32 @@ export function AutoCollectSection({
                 </Badge>
               )}
             </div>
+          </div>
+        )}
+
+        {/* 사용된 시드키워드 */}
+        {usedSeedKeywords.size > 0 && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              사용된 시드키워드 ({usedSeedKeywords.size}개)
+            </label>
+            <div className="max-h-24 overflow-y-auto border rounded-md p-2 bg-red-50">
+              <div className="flex flex-wrap gap-1">
+                {Array.from(usedSeedKeywords).slice(0, 15).map((keyword, index) => (
+                  <Badge key={index} variant="destructive" className="text-xs">
+                    ✓ {keyword}
+                  </Badge>
+                ))}
+                {usedSeedKeywords.size > 15 && (
+                  <Badge variant="destructive" className="text-xs">
+                    +{usedSeedKeywords.size - 15}개 더
+                  </Badge>
+                )}
+              </div>
+            </div>
+            <p className="text-xs text-red-600 mt-1">
+              ✓ 표시된 키워드는 이미 시드키워드로 사용되었습니다
+            </p>
           </div>
         )}
 

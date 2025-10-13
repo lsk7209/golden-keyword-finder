@@ -31,6 +31,7 @@ export default function HomePage() {
   const [autoCollectCurrent, setAutoCollectCurrent] = useState(0);
   const [currentSeedKeywords, setCurrentSeedKeywords] = useState<string[]>([]);
   const [collectedKeywords, setCollectedKeywords] = useState<string[]>([]);
+  const [usedSeedKeywords, setUsedSeedKeywords] = useState<Set<string>>(new Set());
   const autoCollectIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleSearch = async (options: SearchOptions) => {
@@ -258,6 +259,9 @@ export default function HomePage() {
     // 첫 번째 시드키워드 설정 (검색 결과에서 선택)
     const firstSeedKeywords = searchResults.slice(0, 3).map(k => k.keyword);
     setCurrentSeedKeywords(firstSeedKeywords);
+    
+    // 첫 번째 시드키워드를 사용된 키워드로 기록
+    setUsedSeedKeywords(new Set(firstSeedKeywords));
 
     setSaveNotification({
       show: true,
@@ -274,6 +278,7 @@ export default function HomePage() {
     setIsAutoCollecting(false);
     setAutoCollectTarget(0);
     setCurrentSeedKeywords([]);
+    setUsedSeedKeywords(new Set());
     
     if (autoCollectIntervalRef.current) {
       clearTimeout(autoCollectIntervalRef.current);
@@ -356,9 +361,17 @@ export default function HomePage() {
           setCollectedKeywords(prev => [...prev, ...uniqueNewKeywords]);
           setAutoCollectCurrent(prev => prev + uniqueNewKeywords.length);
 
-          // 다음 시드키워드 설정 (새로 수집된 키워드 중에서)
-          const nextSeedKeywords = uniqueNewKeywords.slice(0, 3);
+          // 다음 시드키워드 설정 (새로 수집된 키워드 중에서, 사용되지 않은 키워드만)
+          const availableKeywords = uniqueNewKeywords.filter(keyword => !usedSeedKeywords.has(keyword));
+          const nextSeedKeywords = availableKeywords.slice(0, 3);
           setCurrentSeedKeywords(nextSeedKeywords);
+          
+          // 사용된 시드키워드에 추가
+          setUsedSeedKeywords(prev => {
+            const newSet = new Set(prev);
+            nextSeedKeywords.forEach(keyword => newSet.add(keyword));
+            return newSet;
+          });
 
           setSaveNotification({
             show: true,
@@ -366,15 +379,22 @@ export default function HomePage() {
             type: 'success',
           });
         } else {
-          // 새로운 키워드가 없으면 다른 시드키워드 시도
+          // 새로운 키워드가 없으면 다른 시드키워드 시도 (사용되지 않은 키워드만)
           const allKeywords = collectedKeywords;
           const remainingKeywords = allKeywords.filter(
-            keyword => !seedKeywords.includes(keyword)
+            keyword => !seedKeywords.includes(keyword) && !usedSeedKeywords.has(keyword)
           );
           
           if (remainingKeywords.length > 0) {
             const nextSeedKeywords = remainingKeywords.slice(0, 3);
             setCurrentSeedKeywords(nextSeedKeywords);
+            
+            // 사용된 시드키워드에 추가
+            setUsedSeedKeywords(prev => {
+              const newSet = new Set(prev);
+              nextSeedKeywords.forEach(keyword => newSet.add(keyword));
+              return newSet;
+            });
           } else {
             // 더 이상 수집할 키워드가 없음
             handleStopAutoCollect();
@@ -439,6 +459,7 @@ export default function HomePage() {
               targetCount={autoCollectTarget}
               currentSeedKeywords={currentSeedKeywords}
               collectedKeywords={collectedKeywords}
+              usedSeedKeywords={usedSeedKeywords}
             />
           </div>
         )}
