@@ -28,6 +28,7 @@ export default function DataPage() {
 
   const [showFilters, setShowFilters] = useState(false);
   const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
+  const [isUpdatingDocs, setIsUpdatingDocs] = useState(false);
   const [stats, setStats] = useState({
     totalKeywords: 0,
     goldenKeywords: 0,
@@ -190,6 +191,37 @@ export default function DataPage() {
     setFilters(newFilters);
     setCurrentPage(1); // 필터 변경 시 첫 페이지로 이동
   }, [setFilters]);
+
+  // 문서수 자동 수집 함수
+  const handleUpdateDocuments = useCallback(async () => {
+    setIsUpdatingDocs(true);
+    try {
+      const response = await fetch('/api/keywords/update-documents', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        console.log('문서수 수집 완료:', result.data);
+        // 키워드 목록 새로고침
+        await fetchKeywords();
+        setLastUpdateTime(new Date());
+        alert(`문서수 수집 완료!\n처리: ${result.data.processed}개\n성공: ${result.data.updated}개\n실패: ${result.data.failed}개`);
+      } else {
+        console.error('문서수 수집 실패:', result.error);
+        alert(`문서수 수집 실패: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('문서수 수집 오류:', error);
+      alert('문서수 수집 중 오류가 발생했습니다.');
+    } finally {
+      setIsUpdatingDocs(false);
+    }
+  }, [fetchKeywords]);
 
   const handleSort = useCallback((field: string) => {
     if (sortField === field) {
@@ -380,6 +412,21 @@ export default function DataPage() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
+                  <p className="text-sm text-gray-600">문서수 수집</p>
+                  <p className="text-2xl font-bold text-blue-600">
+                    {keywords.filter(k => k.cafeCount > 0 || k.blogCount > 0 || k.webCount > 0 || k.newsCount > 0).length}
+                  </p>
+                  <p className="text-xs text-gray-500">수집 완료</p>
+                </div>
+                <div className="text-2xl">📊</div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
                   <p className="text-sm text-gray-600">평균 황금점수</p>
                   <p className="text-2xl font-bold text-blue-600">{stats.avgGoldenScore.toFixed(2)}</p>
                   <p className="text-xs text-gray-500">전체 평균</p>
@@ -505,7 +552,32 @@ export default function DataPage() {
         {/* 키워드 테이블 */}
         <Card>
           <CardHeader>
-            <CardTitle>키워드 목록</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>키워드 목록</CardTitle>
+              <div className="flex items-center space-x-2">
+                <Button
+                  onClick={handleUpdateDocuments}
+                  disabled={isUpdatingDocs}
+                  variant="outline"
+                  size="sm"
+                  className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                >
+                  {isUpdatingDocs ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                      수집 중...
+                    </>
+                  ) : (
+                    '📊 문서수 수집'
+                  )}
+                </Button>
+                {lastUpdateTime && (
+                  <span className="text-xs text-gray-500">
+                    마지막 수집: {lastUpdateTime.toLocaleTimeString()}
+                  </span>
+                )}
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="p-0">
             <SimpleKeywordTable
