@@ -41,14 +41,14 @@ export async function POST(request: NextRequest) {
     }
 
     // 백그라운드에서 자동 수집 시작 (비동기)
-    startBackgroundCollection(session.id, seedKeywords, targetCount).catch(error => {
+    startBackgroundCollection((session as any).id, seedKeywords, targetCount).catch(error => {
       console.error('백그라운드 자동 수집 오류:', error);
     });
 
     return NextResponse.json({
       success: true,
       data: {
-        sessionId: session.id,
+        sessionId: (session as any).id,
         message: '자동 수집이 백그라운드에서 시작되었습니다.',
       },
     });
