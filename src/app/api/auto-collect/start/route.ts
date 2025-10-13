@@ -34,6 +34,25 @@ export async function POST(request: NextRequest) {
 
     if (sessionError) {
       console.error('자동 수집 세션 생성 오류:', sessionError);
+      
+      // auto_collect_sessions 테이블이 없는 경우 임시로 UUID 생성
+      if (sessionError.code === '42P01') { // 테이블이 존재하지 않음
+        const tempSessionId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
+        // 백그라운드에서 자동 수집 시작 (비동기)
+        startBackgroundCollection(tempSessionId, seedKeywords, targetCount).catch(error => {
+          console.error('백그라운드 자동 수집 오류:', error);
+        });
+
+        return NextResponse.json({
+          success: true,
+          data: {
+            sessionId: tempSessionId,
+            message: '자동 수집이 백그라운드에서 시작되었습니다. (임시 세션)',
+          },
+        });
+      }
+      
       return NextResponse.json(
         { success: false, error: '자동 수집 세션 생성에 실패했습니다.' },
         { status: 500 }
@@ -165,46 +184,61 @@ async function startBackgroundCollection(sessionId: string, seedKeywords: string
         }
       }
 
-      // 세션 상태 업데이트
-      await supabase
-        .from('auto_collect_sessions')
-        // @ts-expect-error - auto_collect_sessions 테이블 타입이 아직 생성되지 않음
-        .update({
-          current_count: currentCount,
-          seed_keywords: currentSeedKeywords,
-          used_seed_keywords: Array.from(usedSeedKeywords),
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', sessionId);
+      // 세션 상태 업데이트 (테이블이 있는 경우에만)
+      try {
+        await supabase
+          .from('auto_collect_sessions')
+          // @ts-expect-error - auto_collect_sessions 테이블 타입이 아직 생성되지 않음
+          .update({
+            current_count: currentCount,
+            seed_keywords: currentSeedKeywords,
+            used_seed_keywords: Array.from(usedSeedKeywords),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', sessionId);
+      } catch (updateError) {
+        // 테이블이 없는 경우 무시
+        console.log('세션 상태 업데이트 건너뜀 (테이블 없음)');
+      }
 
       // 3초 대기
       await new Promise(resolve => setTimeout(resolve, 3000));
     }
 
-    // 자동 수집 완료
-    await supabase
-      .from('auto_collect_sessions')
-      // @ts-expect-error - auto_collect_sessions 테이블 타입이 아직 생성되지 않음
-      .update({
-        status: 'completed',
-        current_count: currentCount,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', sessionId);
+    // 자동 수집 완료 (테이블이 있는 경우에만)
+    try {
+      await supabase
+        .from('auto_collect_sessions')
+        // @ts-expect-error - auto_collect_sessions 테이블 타입이 아직 생성되지 않음
+        .update({
+          status: 'completed',
+          current_count: currentCount,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', sessionId);
+    } catch (updateError) {
+      // 테이블이 없는 경우 무시
+      console.log('자동 수집 완료 상태 업데이트 건너뜀 (테이블 없음)');
+    }
 
     console.log(`자동 수집 완료: ${currentCount}개 키워드 수집`);
 
   } catch (error) {
     console.error('백그라운드 자동 수집 오류:', error);
     
-    // 오류 발생 시 세션 상태 업데이트
-    await supabase
-      .from('auto_collect_sessions')
-      // @ts-expect-error - auto_collect_sessions 테이블 타입이 아직 생성되지 않음
-      .update({
-        status: 'error',
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', sessionId);
+    // 오류 발생 시 세션 상태 업데이트 (테이블이 있는 경우에만)
+    try {
+      await supabase
+        .from('auto_collect_sessions')
+        // @ts-expect-error - auto_collect_sessions 테이블 타입이 아직 생성되지 않음
+        .update({
+          status: 'error',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', sessionId);
+    } catch (updateError) {
+      // 테이블이 없는 경우 무시
+      console.log('오류 상태 업데이트 건너뜀 (테이블 없음)');
+    }
   }
 }
