@@ -26,6 +26,7 @@ export interface SearchKeywordsResponse {
     saved: number;
     failed: number;
     total: number;
+    message?: string;
   };
 }
 

@@ -63,12 +63,23 @@ export default function HomePage() {
 
         // 서버에서 자동으로 저장된 결과 표시
         if (result.data.saveResult) {
-          const { saved, failed, total } = result.data.saveResult;
-          setSaveNotification({
-            show: true,
-            message: `✅ ${saved}개 키워드가 서버에서 자동으로 데이터베이스에 저장되었습니다${failed > 0 ? ` (${failed}개 실패)` : ''}`,
-            type: failed > 0 ? 'error' : 'success',
-          });
+          const { saved, failed, total, message } = result.data.saveResult;
+          
+          if (message) {
+            // 비동기 저장 메시지
+            setSaveNotification({
+              show: true,
+              message: `🔄 ${message}`,
+              type: 'info',
+            });
+          } else {
+            // 동기 저장 완료 메시지
+            setSaveNotification({
+              show: true,
+              message: `✅ ${saved}개 키워드가 서버에서 자동으로 데이터베이스에 저장되었습니다${failed > 0 ? ` (${failed}개 실패)` : ''}`,
+              type: failed > 0 ? 'error' : 'success',
+            });
+          }
 
           // 5초 후 알림 자동 숨김
           setTimeout(() => {
