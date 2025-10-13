@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { NaverKeyword } from '@/types/keyword';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowUpDown, FileText, Loader2 } from 'lucide-react';
+import { ArrowUpDown, FileText, Loader2, Download } from 'lucide-react';
 import { formatNumber, getCompetitionColor } from '@/lib/utils';
 import { parseNaverNumber } from '@/lib/naver/keywords';
 
@@ -12,6 +12,7 @@ interface KeywordTableProps {
   keywords: NaverKeyword[];
   onSave?: (keyword: NaverKeyword) => Promise<void>;
   onFetchDocs: (keyword: string) => Promise<void>;
+  onExportCSV?: () => void;
   isSaving?: boolean;
   isFetchingDocs: boolean;
   autoSaveProgress?: {
@@ -26,6 +27,7 @@ interface KeywordTableProps {
 export function KeywordTable({
   keywords,
   onFetchDocs,
+  onExportCSV,
   isFetchingDocs,
   autoSaveProgress,
 }: KeywordTableProps) {
@@ -85,12 +87,25 @@ export function KeywordTable({
               연관키워드가 자동으로 데이터베이스에 저장됩니다. 문서수를 조회하여 황금점수를 확인하세요
             </p>
           </div>
-          {autoSaveProgress?.isActive && (
-            <div className="flex items-center space-x-2 text-sm text-blue-600">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-              <span>자동 저장 중... ({autoSaveProgress.current}/{autoSaveProgress.total})</span>
-            </div>
-          )}
+          <div className="flex items-center space-x-3">
+            {keywords.length > 0 && onExportCSV && (
+              <Button
+                onClick={onExportCSV}
+                variant="outline"
+                size="sm"
+                className="border-blue-200 text-blue-700 hover:bg-blue-50"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                CSV 내보내기
+              </Button>
+            )}
+            {autoSaveProgress?.isActive && (
+              <div className="flex items-center space-x-2 text-sm text-blue-600">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                <span>자동 저장 중... ({autoSaveProgress.current}/{autoSaveProgress.total})</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

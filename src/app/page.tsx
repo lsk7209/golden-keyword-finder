@@ -5,6 +5,7 @@ import { SearchSection } from '@/components/home/SearchSection';
 import { KeywordTable } from '@/components/home/KeywordTable';
 import { SearchOptions, NaverKeyword } from '@/types/keyword';
 import { ApiResponse, SearchKeywordsResponse } from '@/types/api';
+import { convertToCSV, downloadCSV, generateFilename } from '@/lib/csv-export';
 
 export default function HomePage() {
   const [searchResults, setSearchResults] = useState<NaverKeyword[]>([]);
@@ -185,6 +186,46 @@ export default function HomePage() {
     }, 5000);
   };
 
+  const handleExportCSV = () => {
+    if (searchResults.length === 0) {
+      setSaveNotification({
+        show: true,
+        message: '내보낼 검색 결과가 없습니다.',
+        type: 'error',
+      });
+      setTimeout(() => {
+        setSaveNotification(prev => ({ ...prev, show: false }));
+      }, 3000);
+      return;
+    }
+
+    try {
+      const csvContent = convertToCSV(searchResults);
+      const filename = generateFilename('연관키워드');
+      downloadCSV(csvContent, filename);
+      
+      setSaveNotification({
+        show: true,
+        message: `📊 ${searchResults.length}개 키워드가 CSV 파일로 내보내졌습니다.`,
+        type: 'success',
+      });
+      
+      setTimeout(() => {
+        setSaveNotification(prev => ({ ...prev, show: false }));
+      }, 3000);
+    } catch (error) {
+      console.error('CSV 내보내기 오류:', error);
+      setSaveNotification({
+        show: true,
+        message: 'CSV 내보내기 중 오류가 발생했습니다.',
+        type: 'error',
+      });
+      setTimeout(() => {
+        setSaveNotification(prev => ({ ...prev, show: false }));
+      }, 3000);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
@@ -269,6 +310,7 @@ export default function HomePage() {
               keywords={searchResults}
               onSave={handleSave}
               onFetchDocs={handleFetchDocs}
+              onExportCSV={handleExportCSV}
               isSaving={isSaving}
               isFetchingDocs={isFetchingDocs}
             />
