@@ -377,19 +377,29 @@ export default function DataPage() {
         );
 
         if (uniqueNewKeywords.length > 0) {
-          // 새로운 키워드만 필터링하여 추가
+          // 새로운 키워드만 필터링하여 추가 (Keyword 타입으로 변환)
           const uniqueNewKeywordObjects = newKeywords.filter(k => 
             uniqueNewKeywords.includes(k.keyword)
           ).map(k => ({
+            id: `temp_${Date.now()}_${Math.random()}`, // 임시 ID 생성
             keyword: k.keyword,
-            monthlyPcQcCnt: k.monthlyPcQcCnt.toString(),
-            monthlyMobileQcCnt: k.monthlyMobileQcCnt.toString(),
-            monthlyAvePcClkCnt: k.monthlyAvePcClkCnt.toString(),
-            monthlyAveMobileClkCnt: k.monthlyAveMobileClkCnt.toString(),
-            monthlyAvePcCtr: k.monthlyAvePcCtr.toString(),
-            monthlyAveMobileCtr: k.monthlyAveMobileCtr.toString(),
-            plAvgDepth: k.plAvgDepth.toString(),
-            compIdx: k.compIdx,
+            monthlyPcQcCnt: parseInt(k.monthlyPcQcCnt.toString()) || 0,
+            monthlyMobileQcCnt: parseInt(k.monthlyMobileQcCnt.toString()) || 0,
+            totalSearchVolume: (parseInt(k.monthlyPcQcCnt.toString()) || 0) + (parseInt(k.monthlyMobileQcCnt.toString()) || 0),
+            monthlyAvePcClkCnt: parseInt(k.monthlyAvePcClkCnt.toString()) || 0,
+            monthlyAveMobileClkCnt: parseInt(k.monthlyAveMobileClkCnt.toString()) || 0,
+            monthlyAvePcCtr: parseFloat(k.monthlyAvePcCtr.toString()) || 0,
+            monthlyAveMobileCtr: parseFloat(k.monthlyAveMobileCtr.toString()) || 0,
+            plAvgDepth: parseInt(k.plAvgDepth.toString()) || 0,
+            compIdx: (k.compIdx === '1' ? '낮음' : k.compIdx === '2' ? '중간' : '높음') as '낮음' | '중간' | '높음',
+            blogCount: 0,
+            cafeCount: 0,
+            webCount: 0,
+            newsCount: 0,
+            totalDocCount: 0,
+            goldenScore: 0,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
           }));
 
           // 검색 결과에 새로운 키워드 추가
