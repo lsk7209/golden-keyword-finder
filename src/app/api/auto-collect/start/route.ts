@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = createClient();
+    const supabase = await createClient();
 
     // 자동 수집 세션 생성
     const { data: session, error: sessionError } = await supabase
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
 
 // 백그라운드 자동 수집 함수
 async function startBackgroundCollection(sessionId: string, seedKeywords: string[], targetCount: number) {
-  const supabase = createClient();
+  const supabase = await createClient();
   let currentSeedKeywords = [...seedKeywords];
   const usedSeedKeywords = new Set(seedKeywords);
   let currentCount = 0;

@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
     const sessionId = searchParams.get('sessionId');
     const userId = searchParams.get('userId') || 'anonymous';
 
-    const supabase = createClient();
+    const supabase = await createClient();
 
     if (sessionId) {
       // 특정 세션 조회
