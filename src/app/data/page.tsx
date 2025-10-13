@@ -52,7 +52,7 @@ export default function DataPage() {
       console.log('기본 필터 적용: 총검색수 500이상');
       setFilters({ searchVolumeMin: 500 });
     }
-  }, [filters.searchVolumeMin, setFilters]);
+  }, [filters, setFilters]);
 
   const fetchKeywords = useCallback(async (page = currentPage, size = pageSize) => {
     setLoading(true);
@@ -78,12 +78,12 @@ export default function DataPage() {
 
       // 검색량 범위 필터 (PC 검색수로 대략적 필터링, 정확한 총검색수는 클라이언트에서 처리)
       if (filters.searchVolumeMin > 0) {
-        // PC 검색수 또는 모바일 검색수가 최소값 이상인 키워드 필터링
-        query = query.or(`monthly_pc_qc_cnt.gte.${filters.searchVolumeMin},monthly_mobile_qc_cnt.gte.${filters.searchVolumeMin}`);
+        // PC 검색수가 최소값 이상인 키워드 필터링 (대략적)
+        query = query.gte('monthly_pc_qc_cnt', filters.searchVolumeMin);
       }
       if (filters.searchVolumeMax < 999999999) {
-        // PC 검색수와 모바일 검색수가 모두 최대값 이하인 키워드 필터링
-        query = query.and(`monthly_pc_qc_cnt.lte.${filters.searchVolumeMax},monthly_mobile_qc_cnt.lte.${filters.searchVolumeMax}`);
+        // PC 검색수가 최대값 이하인 키워드 필터링
+        query = query.lte('monthly_pc_qc_cnt', filters.searchVolumeMax);
       }
 
       // 문서수 범위 필터

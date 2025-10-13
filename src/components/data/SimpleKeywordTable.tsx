@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, memo } from 'react';
+import { memo } from 'react';
 import { Keyword } from '@/types/keyword';
 import { formatNumber, formatDate, getCompetitionColor } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
