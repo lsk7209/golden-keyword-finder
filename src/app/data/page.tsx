@@ -46,12 +46,21 @@ export default function DataPage() {
   const [sortField, setSortField] = useState<string>('cafe_count');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
+  // 기본 필터 설정 (총검색수 500이상)
+  useEffect(() => {
+    console.log('현재 필터 상태:', filters);
+    if (filters.searchVolumeMin === 0) {
+      console.log('기본 필터 적용: 총검색수 500이상');
+      setFilters({ searchVolumeMin: 500 });
+    }
+  }, [filters.searchVolumeMin, setFilters]);
+
   const fetchKeywords = useCallback(async (page = currentPage, size = pageSize) => {
     setLoading(true);
     setError(null);
     try {
       const offset = (page - 1) * size;
-      console.log(`키워드 조회 시작: page=${page}, size=${size}, offset=${offset}`);
+      console.log(`키워드 조회 시작: page=${page}, size=${size}, offset=${offset}, searchVolumeMin=${filters.searchVolumeMin}`);
       
       // 서버사이드 필터링 적용
       let query = supabase
@@ -70,12 +79,12 @@ export default function DataPage() {
 
       // 검색량 범위 필터 (PC 검색수로 대략적 필터링, 정확한 총검색수는 클라이언트에서 처리)
       if (filters.searchVolumeMin > 0) {
-        // PC 검색수가 최소값의 절반 이상인 키워드 필터링 (대략적)
-        query = query.gte('monthly_pc_qc_cnt', Math.floor(filters.searchVolumeMin / 2));
+        // PC 검색수 또는 모바일 검색수가 최소값 이상인 키워드 필터링
+        query = query.or(`monthly_pc_qc_cnt.gte.${filters.searchVolumeMin},monthly_mobile_qc_cnt.gte.${filters.searchVolumeMin}`);
       }
       if (filters.searchVolumeMax < 999999999) {
-        // PC 검색수가 최대값 이하인 키워드 필터링
-        query = query.lte('monthly_pc_qc_cnt', filters.searchVolumeMax);
+        // PC 검색수와 모바일 검색수가 모두 최대값 이하인 키워드 필터링
+        query = query.and(`monthly_pc_qc_cnt.lte.${filters.searchVolumeMax},monthly_mobile_qc_cnt.lte.${filters.searchVolumeMax}`);
       }
 
       // 문서수 범위 필터
@@ -583,7 +592,7 @@ export default function DataPage() {
           </CardHeader>
           <CardContent className="p-0">
             <SimpleKeywordTable
-              keywords={keywords}
+              keywords={filteredKeywords}
               isLoading={isLoading}
               onRefresh={() => fetchKeywords(currentPage, pageSize)}
               onSort={handleSort}
