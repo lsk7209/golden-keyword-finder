@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import { FilterOptions } from '@/types/keyword';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -13,7 +13,7 @@ interface FilterSidebarProps {
   onFiltersChange: (filters: Partial<FilterOptions>) => void;
 }
 
-export function FilterSidebar({ filters, onFiltersChange }: FilterSidebarProps) {
+export const FilterSidebar = memo(function FilterSidebar({ filters, onFiltersChange }: FilterSidebarProps) {
   const [localFilters, setLocalFilters] = useState(filters);
 
   // 로컬 필터와 props 필터 동기화
@@ -409,4 +409,4 @@ export function FilterSidebar({ filters, onFiltersChange }: FilterSidebarProps) 
       </CardContent>
     </Card>
   );
-}
+});

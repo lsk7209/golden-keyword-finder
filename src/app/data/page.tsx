@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useKeywordStore } from '@/store/keyword-store';
 import { Keyword } from '@/types/keyword';
 import { supabase } from '@/lib/supabase/client';
@@ -27,7 +27,6 @@ export default function DataPage() {
   } = useKeywordStore();
 
   const [showFilters, setShowFilters] = useState(false);
-  const [isAutoRefresh, setIsAutoRefresh] = useState(false);
   const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
   const [stats, setStats] = useState({
     totalKeywords: 0,
@@ -36,7 +35,6 @@ export default function DataPage() {
     avgGoldenScore: 0,
   });
   const [error, setError] = useState<string | null>(null);
-  const autoRefreshInterval = useRef<NodeJS.Timeout | null>(null);
   
   // 페이지네이션 상태
   const [currentPage, setCurrentPage] = useState(1);
@@ -128,27 +126,6 @@ export default function DataPage() {
     fetchStats();
   }, [fetchKeywords, fetchStats, currentPage, pageSize]); // 페이지 변경 시에도 호출
 
-  // 자동 새로고침 기능
-  useEffect(() => {
-    if (isAutoRefresh) {
-      autoRefreshInterval.current = setInterval(() => {
-        console.log('자동 새로고침 실행');
-        fetchKeywords(currentPage, pageSize);
-        fetchStats();
-      }, 30000); // 30초마다 새로고침
-    } else {
-      if (autoRefreshInterval.current) {
-        clearInterval(autoRefreshInterval.current);
-        autoRefreshInterval.current = null;
-      }
-    }
-
-    return () => {
-      if (autoRefreshInterval.current) {
-        clearInterval(autoRefreshInterval.current);
-      }
-    };
-  }, [isAutoRefresh, fetchKeywords, fetchStats]); // 의존성 배열에 함수들 추가
 
   const handleBulkDelete = async () => {
     if (selectedIds.length === 0) return;
@@ -268,26 +245,6 @@ export default function DataPage() {
                 <p className="text-sm text-gray-500 mt-1">
                   마지막 업데이트: {lastUpdateTime.toLocaleString('ko-KR')}
                 </p>
-              )}
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="autoRefresh"
-                  checked={isAutoRefresh}
-                  onChange={(e) => setIsAutoRefresh(e.target.checked)}
-                  className="rounded border-gray-300"
-                />
-                <label htmlFor="autoRefresh" className="text-sm text-gray-600">
-                  자동 새로고침 (30초)
-                </label>
-              </div>
-              {isAutoRefresh && (
-                <div className="flex items-center space-x-1 text-green-600">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className="text-sm">실시간 업데이트 중</span>
-                </div>
               )}
             </div>
           </div>

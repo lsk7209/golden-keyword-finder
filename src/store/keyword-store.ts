@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { subscribeWithSelector } from 'zustand/middleware';
 import { Keyword, FilterOptions } from '@/types/keyword';
 
 interface KeywordStore {
@@ -121,8 +120,7 @@ const filterKeywords = (keywords: Keyword[], filters: FilterOptions): Keyword[] 
   });
 };
 
-export const useKeywordStore = create<KeywordStore>()(
-  subscribeWithSelector((set, get) => ({
+export const useKeywordStore = create<KeywordStore>()((set, get) => ({
     // 초기 상태
     keywords: [],
     selectedIds: [],
@@ -200,5 +198,4 @@ export const useKeywordStore = create<KeywordStore>()(
       const { keywords, selectedIds } = get();
       return keywords.filter(k => selectedIds.includes(k.id));
     },
-  }))
-);
+  }));

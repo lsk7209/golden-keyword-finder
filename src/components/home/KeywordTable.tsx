@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { NaverKeyword } from '@/types/keyword';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,7 +24,7 @@ interface KeywordTableProps {
   };
 }
 
-export function KeywordTable({
+export const KeywordTable = memo(function KeywordTable({
   keywords,
   onFetchDocs,
   onExportCSV,
@@ -240,4 +240,4 @@ export function KeywordTable({
       )}
     </div>
   );
-}
+});

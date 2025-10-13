@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, memo } from 'react';
 import { Keyword } from '@/types/keyword';
 import { formatNumber, formatDate, getCompetitionColor } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +12,7 @@ interface SimpleKeywordTableProps {
   onRefresh: () => void;
 }
 
-export function SimpleKeywordTable({ keywords, isLoading, onRefresh }: SimpleKeywordTableProps) {
+export const SimpleKeywordTable = memo(function SimpleKeywordTable({ keywords, isLoading, onRefresh }: SimpleKeywordTableProps) {
   const [sortField, setSortField] = useState<keyof Keyword>('totalSearchVolume');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
@@ -314,4 +314,4 @@ export function SimpleKeywordTable({ keywords, isLoading, onRefresh }: SimpleKey
       </div>
     </div>
   );
-}
+});
