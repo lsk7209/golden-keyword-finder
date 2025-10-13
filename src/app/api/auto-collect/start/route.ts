@@ -1,20 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { updateSessionState } from '../status/route';
-
-// 세션 상태 타입 정의
-interface SessionState {
-  status: 'running' | 'completed' | 'error' | 'stopped' | 'not_found';
-  target_count: number;
-  current_seed_keywords: string[];
-  used_seed_keywords: string[];
-  message: string;
-  logs: string[];
-  updated_at?: string;
-}
-
-// 세션 상태를 가져오기 위한 임시 Map (실제로는 status/route.ts에서 관리)
-const sessionStates = new Map<string, SessionState>();
+import { updateSessionState, getSessionState } from '@/lib/auto-collect/session-manager';
 
 export const maxDuration = 300; // 5분으로 설정
 
@@ -103,7 +89,7 @@ async function startNewAutoCollection(sessionId: string, initialSeedKeywords: st
         used_seed_keywords: Array.from(usedAsSeedKeywords),
         message: `반복 ${iterationCount}회 진행 중 - 현재 수집: ${currentCount}개`,
         logs: [
-          ...(sessionStates.get(sessionId)?.logs || []),
+          ...(getSessionState(sessionId)?.logs || []),
           `🔄 반복 ${iterationCount}회 시작 - 현재 수집: ${currentCount}개`
         ].slice(-10), // 최근 10개 로그만 유지
       });
@@ -128,11 +114,33 @@ async function startNewAutoCollection(sessionId: string, initialSeedKeywords: st
       selectedSeeds.forEach(keyword => usedAsSeedKeywords.add(keyword));
       
       // 네이버 API로 연관키워드 검색
+      console.log('🔍 네이버 API 호출 시작...');
       const { searchKeywords } = await import('@/lib/naver/keywords');
-      const relatedKeywords = await searchKeywords(selectedSeeds, true);
       
-      if (!relatedKeywords || relatedKeywords.length === 0) {
-        console.log('⚠️ 연관키워드 검색 결과가 없습니다.');
+      try {
+        const relatedKeywords = await searchKeywords(selectedSeeds, true);
+        console.log('🔍 네이버 API 응답:', relatedKeywords?.length || 0, '개 키워드');
+        
+        if (!relatedKeywords || relatedKeywords.length === 0) {
+          console.log('⚠️ 연관키워드 검색 결과가 없습니다.');
+          updateSessionState(sessionId, {
+            message: `연관키워드 검색 결과 없음 - 시드키워드: ${selectedSeeds.join(', ')}`,
+            logs: [
+              ...(getSessionState(sessionId)?.logs || []),
+              `⚠️ 연관키워드 검색 결과 없음 - 시드키워드: ${selectedSeeds.join(', ')}`
+            ].slice(-10),
+          });
+          continue;
+        }
+      } catch (apiError) {
+        console.error('❌ 네이버 API 오류:', apiError);
+        updateSessionState(sessionId, {
+          message: `네이버 API 오류: ${apiError instanceof Error ? apiError.message : String(apiError)}`,
+          logs: [
+            ...(getSessionState(sessionId)?.logs || []),
+            `❌ 네이버 API 오류: ${apiError instanceof Error ? apiError.message : String(apiError)}`
+          ].slice(-10),
+        });
         continue;
       }
       
@@ -190,7 +198,7 @@ async function startNewAutoCollection(sessionId: string, initialSeedKeywords: st
       updateSessionState(sessionId, {
         message: `${newKeywords.length}개 키워드 저장 완료! 총 수집: ${currentCount}개`,
         logs: [
-          ...(sessionStates.get(sessionId)?.logs || []),
+          ...(getSessionState(sessionId)?.logs || []),
           `✅ ${newKeywords.length}개 키워드 저장 완료! 총 수집: ${currentCount}개`
         ].slice(-10),
       });
@@ -232,7 +240,7 @@ async function startNewAutoCollection(sessionId: string, initialSeedKeywords: st
       status: 'completed',
       message: `자동 수집 완료! 총 ${currentCount}개 키워드 수집`,
       logs: [
-        ...(sessionStates.get(sessionId)?.logs || []),
+        ...(getSessionState(sessionId)?.logs || []),
         `🎉 자동 수집 완료! 총 ${currentCount}개 키워드 수집 (목표: ${targetCount}개)`
       ].slice(-10),
     });
@@ -245,7 +253,7 @@ async function startNewAutoCollection(sessionId: string, initialSeedKeywords: st
       status: 'error',
       message: `자동 수집 오류: ${error instanceof Error ? error.message : String(error)}`,
       logs: [
-        ...(sessionStates.get(sessionId)?.logs || []),
+        ...(getSessionState(sessionId)?.logs || []),
         `❌ 자동 수집 오류: ${error instanceof Error ? error.message : String(error)}`
       ].slice(-10),
     });
