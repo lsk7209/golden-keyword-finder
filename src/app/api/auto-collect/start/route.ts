@@ -104,9 +104,27 @@ async function startBackgroundCollection(sessionId: string, seedKeywords: string
   const usedSeedKeywords = new Set(seedKeywords); // 시드로 사용된 키워드만 추적
   const allCollectedKeywords = new Set(seedKeywords); // 수집된 모든 키워드 추적
   let currentCount = 0;
+  let consecutiveFailures = 0; // 연속 실패 횟수 추적
 
   try {
     while (currentCount < targetCount) {
+      // 사용되지 않은 시드키워드 선택
+      const availableKeywords = Array.from(allCollectedKeywords).filter(
+        (keyword: string) => !usedSeedKeywords.has(keyword)
+      );
+      
+      if (availableKeywords.length === 0) {
+        console.log('더 이상 사용할 수 있는 시드키워드가 없습니다.');
+        break;
+      }
+      
+      // 사용되지 않은 키워드 중에서 3개 선택
+      currentSeedKeywords = availableKeywords.slice(0, 3);
+      console.log(`새로운 시드키워드 선택: ${currentSeedKeywords.join(', ')} (사용 가능: ${availableKeywords.length}개)`);
+      
+      // 선택된 시드키워드를 사용된 키워드에 추가
+      currentSeedKeywords.forEach(keyword => usedSeedKeywords.add(keyword));
+      
       // 현재 시드키워드로 검색 (직접 네이버 API 호출)
       console.log(`시드키워드로 검색 중: ${currentSeedKeywords.join(', ')}`);
       
@@ -190,53 +208,22 @@ async function startBackgroundCollection(sessionId: string, seedKeywords: string
               }
             }
             
-            // 다음 시드키워드 설정 (새로 수집된 키워드 중에서 아직 시드로 사용되지 않은 키워드)
-            const availableKeywords = uniqueNewKeywords.filter(
-              (keyword: string) => !usedSeedKeywords.has(keyword)
-            );
-            
-            if (availableKeywords.length > 0) {
-              currentSeedKeywords = availableKeywords.slice(0, 3);
-              console.log(`다음 시드키워드 설정: ${currentSeedKeywords.join(', ')}`);
-              
-              // 새로 선택된 시드키워드를 사용된 키워드에 추가
-              currentSeedKeywords.forEach(keyword => usedSeedKeywords.add(keyword));
-            } else {
-              // 새로 수집된 키워드가 모두 이미 사용되었다면, 기존 수집된 키워드에서 찾기
-              const allCollectedArray = Array.from(allCollectedKeywords);
-              const unusedKeywords = allCollectedArray.filter(
-                (keyword: string) => !usedSeedKeywords.has(keyword)
-              );
-              
-              if (unusedKeywords.length > 0) {
-                currentSeedKeywords = unusedKeywords.slice(0, 3);
-                console.log(`대체 시드키워드 설정: ${currentSeedKeywords.join(', ')}`);
-                currentSeedKeywords.forEach(keyword => usedSeedKeywords.add(keyword));
-              } else {
-                console.log('더 이상 사용할 수 있는 시드키워드가 없습니다.');
-                break;
-              }
-            }
+            // 성공적으로 키워드를 수집했으므로 연속 실패 횟수 리셋
+            consecutiveFailures = 0;
+            console.log(`키워드 수집 성공! 다음 반복에서 새로운 시드키워드를 선택합니다.`);
           }
         } else {
-          // 새로운 키워드가 없으면 다른 시드키워드 시도
-          console.log('새로운 키워드가 없음. 다른 시드키워드 시도 중...');
-          const allCollectedArray = Array.from(allCollectedKeywords);
-          const remainingKeywords = allCollectedArray.filter(
-            (keyword: string) => !usedSeedKeywords.has(keyword)
-          );
+          // 새로운 키워드가 없음
+          consecutiveFailures++;
+          console.log(`새로운 키워드가 없음. 연속 실패: ${consecutiveFailures}회`);
           
-          console.log(`사용 가능한 키워드: ${remainingKeywords.length}개`, remainingKeywords.slice(0, 10));
-          
-          if (remainingKeywords.length > 0) {
-            currentSeedKeywords = remainingKeywords.slice(0, 3);
-            console.log(`대체 시드키워드 설정: ${currentSeedKeywords.join(', ')}`);
-            currentSeedKeywords.forEach(keyword => usedSeedKeywords.add(keyword));
-          } else {
-            // 더 이상 수집할 키워드가 없음
-            console.log('더 이상 사용할 수 있는 시드키워드가 없습니다.');
+          // 연속으로 5번 실패하면 중단
+          if (consecutiveFailures >= 5) {
+            console.log('연속 5회 실패로 자동 수집을 중단합니다.');
             break;
           }
+          
+          console.log('다음 반복에서 다른 시드키워드를 시도합니다.');
         }
       }
 
