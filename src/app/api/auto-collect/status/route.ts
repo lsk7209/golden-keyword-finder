@@ -1,8 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
+// 세션 상태 타입 정의
+interface SessionState {
+  status: 'running' | 'completed' | 'error' | 'stopped' | 'not_found';
+  target_count: number;
+  current_seed_keywords: string[];
+  used_seed_keywords: string[];
+  message: string;
+  logs: string[];
+  updated_at?: string;
+}
+
 // 메모리에서 세션 상태 관리 (실제로는 Redis나 데이터베이스 사용 권장)
-const sessionStates = new Map<string, any>();
+const sessionStates = new Map<string, SessionState>();
 
 export async function GET(request: NextRequest) {
   try {
@@ -71,8 +82,8 @@ export async function GET(request: NextRequest) {
 }
 
 // 세션 상태 업데이트 함수 (다른 모듈에서 사용)
-export function updateSessionState(sessionId: string, updates: any) {
-  const currentState = sessionStates.get(sessionId) || {};
+export function updateSessionState(sessionId: string, updates: Partial<SessionState>) {
+  const currentState = sessionStates.get(sessionId) || {} as SessionState;
   const newState = { ...currentState, ...updates, updated_at: new Date().toISOString() };
   sessionStates.set(sessionId, newState);
   console.log(`🔄 세션 상태 업데이트: ${sessionId}`, updates);

@@ -2,8 +2,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { updateSessionState } from '../status/route';
 
+// 세션 상태 타입 정의
+interface SessionState {
+  status: 'running' | 'completed' | 'error' | 'stopped' | 'not_found';
+  target_count: number;
+  current_seed_keywords: string[];
+  used_seed_keywords: string[];
+  message: string;
+  logs: string[];
+  updated_at?: string;
+}
+
 // 세션 상태를 가져오기 위한 임시 Map (실제로는 status/route.ts에서 관리)
-const sessionStates = new Map<string, any>();
+const sessionStates = new Map<string, SessionState>();
 
 export const maxDuration = 300; // 5분으로 설정
 
@@ -14,7 +25,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log('요청 본문:', { targetCount: body.targetCount, seedKeywords: body.seedKeywords });
     
-    const { targetCount, seedKeywords, userId = 'anonymous' } = body;
+    const { targetCount, seedKeywords } = body;
 
     if (!targetCount || !seedKeywords || seedKeywords.length === 0) {
       console.log('유효성 검사 실패:', { targetCount, seedKeywords });
@@ -25,7 +36,7 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('Supabase 클라이언트 생성 중...');
-    const supabase = await createClient();
+    await createClient();
     console.log('Supabase 클라이언트 생성 완료');
 
     // 임시 세션 ID 생성 (테이블 없이도 작동)
