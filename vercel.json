@@ -3,11 +3,5 @@
     "src/app/api/keywords/search/route.ts": {
       "maxDuration": 10
     }
-  },
-  "crons": [
-    {
-      "path": "/api/keywords/update-documents",
-      "schedule": "0 */6 * * *"
-    }
-  ]
+  }
 }

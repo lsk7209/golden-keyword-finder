@@ -28,7 +28,6 @@ export default function DataPage() {
 
   const [showFilters, setShowFilters] = useState(false);
   const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
-  const [isUpdatingDocs, setIsUpdatingDocs] = useState(false);
   const [stats, setStats] = useState({
     totalKeywords: 0,
     goldenKeywords: 0,
@@ -203,36 +202,6 @@ export default function DataPage() {
     setCurrentPage(1); // 필터 변경 시 첫 페이지로 이동
   }, [setFilters]);
 
-  // 문서수 자동 수집 함수
-  const handleUpdateDocuments = useCallback(async () => {
-    setIsUpdatingDocs(true);
-    try {
-      const response = await fetch('/api/keywords/update-documents', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      const result = await response.json();
-      
-      if (result.success) {
-        console.log('문서수 수집 완료:', result.data);
-        // 키워드 목록 새로고침
-        await fetchKeywords();
-        setLastUpdateTime(new Date());
-        alert(`문서수 수집 완료!\n처리: ${result.data.processed}개\n성공: ${result.data.updated}개\n실패: ${result.data.failed}개`);
-      } else {
-        console.error('문서수 수집 실패:', result.error);
-        alert(`문서수 수집 실패: ${result.error}`);
-      }
-    } catch (error) {
-      console.error('문서수 수집 오류:', error);
-      alert('문서수 수집 중 오류가 발생했습니다.');
-    } finally {
-      setIsUpdatingDocs(false);
-    }
-  }, [fetchKeywords]);
 
   const handleSort = useCallback((field: string) => {
     if (sortField === field) {
@@ -565,29 +534,6 @@ export default function DataPage() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>키워드 목록</CardTitle>
-              <div className="flex items-center space-x-2">
-                <Button
-                  onClick={handleUpdateDocuments}
-                  disabled={isUpdatingDocs}
-                  variant="outline"
-                  size="sm"
-                  className="text-blue-600 border-blue-200 hover:bg-blue-50"
-                >
-                  {isUpdatingDocs ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
-                      수집 중...
-                    </>
-                  ) : (
-                    '📊 문서수 수집'
-                  )}
-                </Button>
-                {lastUpdateTime && (
-                  <span className="text-xs text-gray-500">
-                    마지막 수집: {lastUpdateTime.toLocaleTimeString()}
-                  </span>
-                )}
-              </div>
             </div>
           </CardHeader>
           <CardContent className="p-0">
