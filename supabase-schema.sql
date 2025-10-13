@@ -76,7 +76,21 @@ CREATE TABLE document_fetch_logs (
   status VARCHAR(20) DEFAULT 'success'
 );
 
--- 4. 인덱스 생성
+-- 4. auto_collect_sessions 테이블 생성 (자동 수집 세션 관리)
+CREATE TABLE auto_collect_sessions (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id VARCHAR(255) DEFAULT 'anonymous',
+  target_count INTEGER NOT NULL,
+  current_count INTEGER DEFAULT 0,
+  seed_keywords TEXT[] NOT NULL,
+  used_seed_keywords TEXT[] DEFAULT '{}',
+  status VARCHAR(20) DEFAULT 'running' CHECK (status IN ('running', 'completed', 'stopped', 'error')),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  completed_at TIMESTAMPTZ
+);
+
+-- 5. 인덱스 생성
 CREATE INDEX idx_keywords_golden_score ON keywords(golden_score DESC);
 CREATE INDEX idx_keywords_search_volume ON keywords(total_search_volume DESC);
 CREATE INDEX idx_keywords_created_at ON keywords(created_at DESC);
@@ -91,11 +105,16 @@ CREATE INDEX idx_search_history_seed_keyword ON search_history(seed_keyword);
 CREATE INDEX idx_document_fetch_logs_keyword ON document_fetch_logs(keyword_id);
 CREATE INDEX idx_document_fetch_logs_date ON document_fetch_logs(fetched_at DESC);
 
--- 5. Row Level Security (RLS) 정책
+CREATE INDEX idx_auto_collect_sessions_user ON auto_collect_sessions(user_id);
+CREATE INDEX idx_auto_collect_sessions_status ON auto_collect_sessions(status);
+CREATE INDEX idx_auto_collect_sessions_created ON auto_collect_sessions(created_at DESC);
+
+-- 6. Row Level Security (RLS) 정책
 -- Enable RLS
 ALTER TABLE keywords ENABLE ROW LEVEL SECURITY;
 ALTER TABLE search_history ENABLE ROW LEVEL SECURITY;
 ALTER TABLE document_fetch_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE auto_collect_sessions ENABLE ROW LEVEL SECURITY;
 
 -- 공개 읽기 (인증 없이도 조회 가능)
 CREATE POLICY "Public read access on keywords" ON keywords
@@ -123,7 +142,17 @@ CREATE POLICY "Authenticated users can insert search_history" ON search_history
 CREATE POLICY "Authenticated users can insert document_fetch_logs" ON document_fetch_logs
   FOR INSERT WITH CHECK (auth.role() = 'authenticated');
 
--- 6. 업데이트 트리거 함수
+-- 자동 수집 세션 정책
+CREATE POLICY "Public read access on auto_collect_sessions" ON auto_collect_sessions
+  FOR SELECT USING (true);
+
+CREATE POLICY "Public insert access on auto_collect_sessions" ON auto_collect_sessions
+  FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Public update access on auto_collect_sessions" ON auto_collect_sessions
+  FOR UPDATE USING (true);
+
+-- 7. 업데이트 트리거 함수
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -132,13 +161,18 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
--- 7. 트리거 생성
+-- 8. 트리거 생성
 CREATE TRIGGER update_keywords_updated_at 
     BEFORE UPDATE ON keywords 
     FOR EACH ROW 
     EXECUTE FUNCTION update_updated_at_column();
 
--- 8. 샘플 데이터 삽입 (선택사항)
+CREATE TRIGGER update_auto_collect_sessions_updated_at 
+    BEFORE UPDATE ON auto_collect_sessions 
+    FOR EACH ROW 
+    EXECUTE FUNCTION update_updated_at_column();
+
+-- 9. 샘플 데이터 삽입 (선택사항)
 INSERT INTO keywords (
   keyword, 
   monthly_pc_qc_cnt, 
@@ -200,7 +234,7 @@ INSERT INTO keywords (
   false
 );
 
--- 9. 뷰 생성 (황금키워드 랭킹)
+-- 10. 뷰 생성 (황금키워드 랭킹)
 CREATE VIEW golden_keywords_ranking AS
 SELECT 
   keyword,
@@ -214,7 +248,7 @@ FROM keywords
 WHERE total_doc_count > 0
 ORDER BY golden_score DESC;
 
--- 10. 통계 뷰 생성
+-- 11. 통계 뷰 생성
 CREATE VIEW keyword_stats AS
 SELECT 
   COUNT(*) as total_keywords,

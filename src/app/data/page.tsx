@@ -45,6 +45,7 @@ export default function DataPage() {
   const [currentSeedKeywords, setCurrentSeedKeywords] = useState<string[]>([]);
   const [collectedKeywords, setCollectedKeywords] = useState<string[]>([]);
   const [usedSeedKeywords, setUsedSeedKeywords] = useState<Set<string>>(new Set());
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [autoCollectNotification, setAutoCollectNotification] = useState<{
     show: boolean;
     message: string;
@@ -273,7 +274,7 @@ export default function DataPage() {
     setCurrentPage(1); // 정렬 변경 시 첫 페이지로 이동
   }, [sortField, sortDirection]);
 
-  // 자동 수집 시작
+  // 자동 수집 시작 (백그라운드)
   const handleStartAutoCollect = async (targetCount: number) => {
     if (keywords.length === 0) {
       setAutoCollectNotification({
@@ -287,195 +288,172 @@ export default function DataPage() {
       return;
     }
 
-    setIsAutoCollecting(true);
-    setAutoCollectTarget(targetCount);
-    setAutoCollectCurrent(keywords.length);
-    setCollectedKeywords(keywords.map(k => k.keyword));
-    
-    // 첫 번째 시드키워드 설정 (기존 키워드에서 선택)
-    const firstSeedKeywords = keywords.slice(0, 3).map(k => k.keyword);
-    setCurrentSeedKeywords(firstSeedKeywords);
-    
-    // 첫 번째 시드키워드를 사용된 키워드로 기록
-    setUsedSeedKeywords(new Set(firstSeedKeywords));
-
-    setAutoCollectNotification({
-      show: true,
-      message: `🤖 자동 수집을 시작합니다. 목표: ${targetCount}개`,
-      type: 'info',
-    });
-
-    // 자동 수집 시작
-    startAutoCollectLoop(firstSeedKeywords, targetCount);
-  };
-
-  // 자동 수집 중지
-  const handleStopAutoCollect = () => {
-    setIsAutoCollecting(false);
-    setAutoCollectTarget(0);
-    setCurrentSeedKeywords([]);
-    setUsedSeedKeywords(new Set());
-    
-    if (autoCollectIntervalRef.current) {
-      clearTimeout(autoCollectIntervalRef.current);
-      autoCollectIntervalRef.current = null;
-    }
-
-    setAutoCollectNotification({
-      show: true,
-      message: `⏹️ 자동 수집이 중지되었습니다. 총 ${autoCollectCurrent}개 키워드 수집 완료`,
-      type: 'info',
-    });
-    setTimeout(() => {
-      setAutoCollectNotification(prev => ({ ...prev, show: false }));
-    }, 5000);
-  };
-
-  // 자동 수집 루프
-  const startAutoCollectLoop = async (seedKeywords: string[], targetCount: number) => {
-    if (!isAutoCollecting) {
-      return;
-    }
-    
-    if (autoCollectCurrent >= targetCount) {
-      handleStopAutoCollect();
-      setAutoCollectNotification({
-        show: true,
-        message: `✅ 자동 수집 완료: 목표 ${targetCount}개 달성!`,
-        type: 'success',
-      });
-      setTimeout(() => {
-        setAutoCollectNotification(prev => ({ ...prev, show: false }));
-      }, 5000);
-      return;
-    }
-
     try {
-      // 현재 시드키워드로 검색
-      const response = await fetch('/api/keywords/search', {
+      const firstSeedKeywords = keywords.slice(0, 3).map(k => k.keyword);
+      
+      const response = await fetch('/api/auto-collect/start', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          seedKeywords: seedKeywords,
-          showDetail: true,
-          autoFetchDocs: true,
+          targetCount,
+          seedKeywords: firstSeedKeywords,
+          userId: 'anonymous',
         }),
       });
 
-      const result: ApiResponse<SearchKeywordsResponse> = await response.json();
+      const result = await response.json();
 
-      if (result.success && result.data) {
-        const newKeywords = result.data.keywords;
-        const newKeywordNames = newKeywords.map(k => k.keyword);
-        
-        // 중복 제거하여 새로운 키워드만 추가
-        const allCollectedKeywords = [...collectedKeywords, ...keywords.map(k => k.keyword)];
-        const uniqueNewKeywords = newKeywordNames.filter(
-          keyword => !allCollectedKeywords.includes(keyword)
-        );
+      if (result.success) {
+        setIsAutoCollecting(true);
+        setAutoCollectTarget(targetCount);
+        setAutoCollectCurrent(keywords.length);
+        setCollectedKeywords(keywords.map(k => k.keyword));
+        setCurrentSeedKeywords(firstSeedKeywords);
+        setUsedSeedKeywords(new Set(firstSeedKeywords));
 
-        if (uniqueNewKeywords.length > 0) {
-          // 새로운 키워드만 필터링하여 추가 (Keyword 타입으로 변환)
-          const uniqueNewKeywordObjects = newKeywords.filter(k => 
-            uniqueNewKeywords.includes(k.keyword)
-          ).map(k => ({
-            id: `temp_${Date.now()}_${Math.random()}`, // 임시 ID 생성
-            keyword: k.keyword,
-            monthlyPcQcCnt: parseInt(k.monthlyPcQcCnt.toString()) || 0,
-            monthlyMobileQcCnt: parseInt(k.monthlyMobileQcCnt.toString()) || 0,
-            totalSearchVolume: (parseInt(k.monthlyPcQcCnt.toString()) || 0) + (parseInt(k.monthlyMobileQcCnt.toString()) || 0),
-            monthlyAvePcClkCnt: parseInt(k.monthlyAvePcClkCnt.toString()) || 0,
-            monthlyAveMobileClkCnt: parseInt(k.monthlyAveMobileClkCnt.toString()) || 0,
-            monthlyAvePcCtr: parseFloat(k.monthlyAvePcCtr.toString()) || 0,
-            monthlyAveMobileCtr: parseFloat(k.monthlyAveMobileCtr.toString()) || 0,
-            plAvgDepth: parseInt(k.plAvgDepth.toString()) || 0,
-            compIdx: (k.compIdx === '1' ? '낮음' : k.compIdx === '2' ? '중간' : '높음') as '낮음' | '중간' | '높음',
-            blogCount: 0,
-            cafeCount: 0,
-            webCount: 0,
-            newsCount: 0,
-            totalDocCount: 0,
-            goldenScore: 0,
-            tags: [],
-            isFavorite: false,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          }));
+        setAutoCollectNotification({
+          show: true,
+          message: `🤖 백그라운드 자동 수집을 시작합니다. 목표: ${targetCount}개`,
+          type: 'info',
+        });
 
-          // 검색 결과에 새로운 키워드 추가
-          setKeywords([...keywords, ...uniqueNewKeywordObjects]);
-          setCollectedKeywords(prev => [...prev, ...uniqueNewKeywords]);
-          setAutoCollectCurrent(prev => prev + uniqueNewKeywords.length);
-
-          // 다음 시드키워드 설정 (새로 수집된 키워드 중에서, 사용되지 않은 키워드만)
-          const availableKeywords = uniqueNewKeywords.filter(keyword => !usedSeedKeywords.has(keyword));
-          const nextSeedKeywords = availableKeywords.slice(0, 3);
-          setCurrentSeedKeywords(nextSeedKeywords);
-          
-          // 사용된 시드키워드에 추가
-          setUsedSeedKeywords(prev => {
-            const newSet = new Set(prev);
-            nextSeedKeywords.forEach(keyword => newSet.add(keyword));
-            return newSet;
-          });
-
-          setAutoCollectNotification({
-            show: true,
-            message: `📈 ${uniqueNewKeywords.length}개 새로운 키워드 수집 완료 (총 ${autoCollectCurrent + uniqueNewKeywords.length}개)`,
-            type: 'success',
-          });
-        } else {
-          // 새로운 키워드가 없으면 다른 시드키워드 시도 (사용되지 않은 키워드만)
-          const allKeywords = collectedKeywords;
-          const remainingKeywords = allKeywords.filter(
-            keyword => !seedKeywords.includes(keyword) && !usedSeedKeywords.has(keyword)
-          );
-          
-          if (remainingKeywords.length > 0) {
-            const nextSeedKeywords = remainingKeywords.slice(0, 3);
-            setCurrentSeedKeywords(nextSeedKeywords);
-            
-            // 사용된 시드키워드에 추가
-            setUsedSeedKeywords(prev => {
-              const newSet = new Set(prev);
-              nextSeedKeywords.forEach(keyword => newSet.add(keyword));
-              return newSet;
-            });
-          } else {
-            // 더 이상 수집할 키워드가 없음
-            handleStopAutoCollect();
-            setAutoCollectNotification({
-              show: true,
-              message: '✅ 자동 수집 완료: 더 이상 수집할 키워드가 없습니다.',
-              type: 'success',
-            });
-            return;
-          }
-        }
+        // 백그라운드 상태 폴링 시작
+        setCurrentSessionId(result.data.sessionId);
+        startStatusPolling(result.data.sessionId);
+      } else {
+        setAutoCollectNotification({
+          show: true,
+          message: `자동 수집 시작 실패: ${result.error}`,
+          type: 'error',
+        });
       }
-
-      // 3초 후 다음 수집 시도
-      autoCollectIntervalRef.current = setTimeout(() => {
-        if (isAutoCollecting && autoCollectCurrent < targetCount) {
-          const nextSeedKeywords = currentSeedKeywords.length > 0 
-            ? currentSeedKeywords 
-            : collectedKeywords.slice(0, 3);
-          startAutoCollectLoop(nextSeedKeywords, targetCount);
-        }
-      }, 3000);
-
     } catch (error) {
-      console.error('자동 수집 오류:', error);
+      console.error('자동 수집 시작 오류:', error);
       setAutoCollectNotification({
         show: true,
-        message: '자동 수집 중 오류가 발생했습니다.',
+        message: '자동 수집 시작 중 오류가 발생했습니다.',
         type: 'error',
       });
-      handleStopAutoCollect();
     }
   };
+
+  // 자동 수집 중지 (백그라운드)
+  const handleStopAutoCollect = async () => {
+    try {
+      const response = await fetch('/api/auto-collect/stop', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sessionId: currentSessionId,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setIsAutoCollecting(false);
+        setAutoCollectTarget(0);
+        setCurrentSeedKeywords([]);
+        setUsedSeedKeywords(new Set());
+        
+        if (autoCollectIntervalRef.current) {
+          clearTimeout(autoCollectIntervalRef.current);
+          autoCollectIntervalRef.current = null;
+        }
+
+        setAutoCollectNotification({
+          show: true,
+          message: `⏹️ 백그라운드 자동 수집이 중지되었습니다. 총 ${autoCollectCurrent}개 키워드 수집 완료`,
+          type: 'info',
+        });
+        setTimeout(() => {
+          setAutoCollectNotification(prev => ({ ...prev, show: false }));
+        }, 5000);
+      } else {
+        setAutoCollectNotification({
+          show: true,
+          message: `자동 수집 중지 실패: ${result.error}`,
+          type: 'error',
+        });
+      }
+    } catch (error) {
+      console.error('자동 수집 중지 오류:', error);
+      setAutoCollectNotification({
+        show: true,
+        message: '자동 수집 중지 중 오류가 발생했습니다.',
+        type: 'error',
+      });
+    }
+  };
+
+  // 백그라운드 상태 폴링
+  const startStatusPolling = (sessionId: string) => {
+    const pollStatus = async () => {
+      try {
+        const response = await fetch(`/api/auto-collect/status?sessionId=${sessionId}`);
+        const result = await response.json();
+
+        if (result.success && result.data) {
+          const session = result.data;
+          
+          // 상태 업데이트
+          setAutoCollectCurrent(session.current_count);
+          setCurrentSeedKeywords(session.seed_keywords || []);
+          setUsedSeedKeywords(new Set(session.used_seed_keywords || []));
+
+          // 완료 또는 오류 시 폴링 중지
+          if (session.status === 'completed' || session.status === 'error' || session.status === 'stopped') {
+            setIsAutoCollecting(false);
+            
+            if (session.status === 'completed') {
+              setAutoCollectNotification({
+                show: true,
+                message: `✅ 백그라운드 자동 수집 완료: ${session.current_count}개 키워드 수집`,
+                type: 'success',
+              });
+              // 키워드 목록 새로고침
+              fetchKeywords(currentPage, pageSize);
+            } else if (session.status === 'stopped') {
+              setAutoCollectNotification({
+                show: true,
+                message: `⏹️ 백그라운드 자동 수집 중지: ${session.current_count}개 키워드 수집`,
+                type: 'info',
+              });
+            } else {
+              setAutoCollectNotification({
+                show: true,
+                message: `❌ 백그라운드 자동 수집 오류 발생`,
+                type: 'error',
+              });
+            }
+            
+            setTimeout(() => {
+              setAutoCollectNotification(prev => ({ ...prev, show: false }));
+            }, 5000);
+            
+            if (autoCollectIntervalRef.current) {
+              clearTimeout(autoCollectIntervalRef.current);
+              autoCollectIntervalRef.current = null;
+            }
+          } else {
+            // 계속 폴링
+            autoCollectIntervalRef.current = setTimeout(pollStatus, 3000);
+          }
+        }
+      } catch (error) {
+        console.error('상태 폴링 오류:', error);
+        autoCollectIntervalRef.current = setTimeout(pollStatus, 5000); // 오류 시 5초 후 재시도
+      }
+    };
+
+    // 첫 번째 폴링 시작
+    pollStatus();
+  };
+
 
   useEffect(() => {
     fetchKeywords(currentPage, pageSize);
