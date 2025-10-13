@@ -111,11 +111,10 @@ async function startBackgroundCollection(sessionId: string, seedKeywords: string
       console.log(`시드키워드로 검색 중: ${currentSeedKeywords.join(', ')}`);
       
       // 네이버 API 직접 호출 (fetch 대신)
-      const { getRelatedKeywords } = await import('@/lib/naver/search');
-      const relatedKeywordsResult = await getRelatedKeywords(currentSeedKeywords);
+      const { searchKeywords } = await import('@/lib/naver/keywords');
+      const newKeywords = await searchKeywords(currentSeedKeywords, true);
 
-      if (relatedKeywordsResult.success && relatedKeywordsResult.data) {
-        const newKeywords = relatedKeywordsResult.data.keywords;
+      if (newKeywords && newKeywords.length > 0) {
         const newKeywordNames = newKeywords.map((k: { keyword: string }) => k.keyword);
         
         // 중복 제거하여 새로운 키워드만 추가
