@@ -398,6 +398,8 @@ export default function DataPage() {
             newsCount: 0,
             totalDocCount: 0,
             goldenScore: 0,
+            tags: [],
+            isFavorite: false,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           }));
