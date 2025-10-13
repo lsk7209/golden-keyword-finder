@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
 async function startBackgroundCollection(sessionId: string, seedKeywords: string[], targetCount: number) {
   const supabase = createClient();
   let currentSeedKeywords = [...seedKeywords];
-  let usedSeedKeywords = new Set(seedKeywords);
+  const usedSeedKeywords = new Set(seedKeywords);
   let currentCount = 0;
 
   try {
@@ -87,7 +87,7 @@ async function startBackgroundCollection(sessionId: string, seedKeywords: string
 
       if (result.success && result.data) {
         const newKeywords = result.data.keywords;
-        const newKeywordNames = newKeywords.map((k: any) => k.keyword);
+        const newKeywordNames = newKeywords.map((k: { keyword: string }) => k.keyword);
         
         // 중복 제거하여 새로운 키워드만 추가
         const allUsedKeywords = Array.from(usedSeedKeywords);
@@ -98,8 +98,18 @@ async function startBackgroundCollection(sessionId: string, seedKeywords: string
         if (uniqueNewKeywords.length > 0) {
           // 새로운 키워드를 데이터베이스에 저장
           const keywordObjects = newKeywords
-            .filter((k: any) => uniqueNewKeywords.includes(k.keyword))
-            .map((k: any) => ({
+            .filter((k: { keyword: string }) => uniqueNewKeywords.includes(k.keyword))
+            .map((k: { 
+              keyword: string; 
+              monthlyPcQcCnt: string | number; 
+              monthlyMobileQcCnt: string | number; 
+              monthlyAvePcClkCnt: string | number; 
+              monthlyAveMobileClkCnt: string | number; 
+              monthlyAvePcCtr: string | number; 
+              monthlyAveMobileCtr: string | number; 
+              plAvgDepth: string | number; 
+              compIdx: string; 
+            }) => ({
               keyword: k.keyword,
               monthly_pc_qc_cnt: parseInt(k.monthlyPcQcCnt.toString()) || 0,
               monthly_mobile_qc_cnt: parseInt(k.monthlyMobileQcCnt.toString()) || 0,
