@@ -403,7 +403,7 @@ export default function DataPage() {
           }));
 
           // 검색 결과에 새로운 키워드 추가
-          setKeywords((prev: Keyword[]) => [...prev, ...uniqueNewKeywordObjects]);
+          setKeywords([...keywords, ...uniqueNewKeywordObjects]);
           setCollectedKeywords(prev => [...prev, ...uniqueNewKeywords]);
           setAutoCollectCurrent(prev => prev + uniqueNewKeywords.length);
 
