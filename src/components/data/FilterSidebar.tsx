@@ -30,7 +30,7 @@ export const FilterSidebar = memo(function FilterSidebar({ filters, onFiltersCha
       searchTerm: '',
       goldenScoreRange: [0, 1000],
       competitionLevels: ['낮음', '중간', '높음'],
-      searchVolumeMin: 0, // 사용자가 자유롭게 수정 가능
+      searchVolumeMin: 500, // 기본값: 총검색수 500이상 (사용자 수정 가능)
       searchVolumeMax: 1000000,
       docCountMax: 1000000,
       cafeCountMin: 0,

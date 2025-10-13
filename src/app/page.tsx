@@ -38,6 +38,7 @@ export default function HomePage() {
         body: JSON.stringify({
           seedKeywords: options.seedKeywords,
           showDetail: options.showDetail,
+          autoFetchDocs: options.autoFetchDocs,
         }),
       });
 

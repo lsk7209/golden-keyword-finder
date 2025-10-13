@@ -15,7 +15,7 @@ interface SearchSectionProps {
 export function SearchSection({ onSearch, isLoading }: SearchSectionProps) {
   const [input, setInput] = useState('');
   const [showDetail, setShowDetail] = useState(true);
-  const [autoFetchDocs, setAutoFetchDocs] = useState(false);
+  const [autoFetchDocs, setAutoFetchDocs] = useState(true); // 기본값: 자동 문서수 조회
   const [error, setError] = useState<string | null>(null);
 
   const handleSearch = () => {
@@ -90,12 +90,17 @@ export function SearchSection({ onSearch, isLoading }: SearchSectionProps) {
               id="autoFetchDocs"
               checked={autoFetchDocs}
               onChange={(e) => setAutoFetchDocs(e.target.checked)}
-              className="rounded border-gray-300"
+              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
             />
-            <label htmlFor="autoFetchDocs" className="text-sm">
-              자동으로 문서수 조회 (시간이 오래 걸릴 수 있음)
+            <label htmlFor="autoFetchDocs" className="text-sm text-gray-700">
+              📊 자동으로 문서수 조회 (시간이 오래 걸릴 수 있음)
             </label>
           </div>
+          {autoFetchDocs && (
+            <p className="text-xs text-blue-600 mt-1">
+              ⏱️ 문서수 조회로 인해 검색 시간이 길어질 수 있습니다
+            </p>
+          )}
         </div>
 
         <Button

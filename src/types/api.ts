@@ -8,6 +8,7 @@ export interface ApiResponse<T> {
 export interface SearchKeywordsRequest {
   seedKeywords: string[];
   showDetail: boolean;
+  autoFetchDocs?: boolean;
 }
 
 export interface SearchKeywordsResponse {

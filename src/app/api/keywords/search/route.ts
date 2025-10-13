@@ -9,9 +9,9 @@ export const maxDuration = 10;
 export async function POST(request: NextRequest) {
   try {
     const body: SearchKeywordsRequest = await request.json();
-    const { seedKeywords, showDetail } = body;
+    const { seedKeywords, showDetail, autoFetchDocs } = body;
 
-    console.log('키워드 검색 요청:', { seedKeywords, showDetail });
+    console.log('키워드 검색 요청:', { seedKeywords, showDetail, autoFetchDocs });
 
     if (!seedKeywords || seedKeywords.length === 0) {
       return NextResponse.json(
@@ -62,7 +62,9 @@ export async function POST(request: NextRequest) {
         saved: 0,
         failed: 0,
         total: keywords.length,
-        message: '검색 완료. 클라이언트에서 자동 저장을 시작합니다.'
+        message: autoFetchDocs 
+          ? '검색 완료. 클라이언트에서 자동 저장 및 문서수 조회를 시작합니다.'
+          : '검색 완료. 클라이언트에서 자동 저장을 시작합니다.'
       }
     };
 
