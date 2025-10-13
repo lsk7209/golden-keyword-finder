@@ -78,6 +78,8 @@ export interface FilterOptions {
   newsCountMax: number;
   dateRange: [Date, Date];
   tags: string[];
+  // 문서수 0 표시 옵션
+  showZeroDocCount: boolean;
 }
 
 export interface SearchOptions {

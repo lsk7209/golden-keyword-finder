@@ -45,14 +45,7 @@ export default function DataPage() {
   const [sortField, setSortField] = useState<string>('cafe_count');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
-  // 기본 필터 설정 (총검색수 500이상)
-  useEffect(() => {
-    console.log('현재 필터 상태:', filters);
-    if (filters.searchVolumeMin === 0) {
-      console.log('기본 필터 적용: 총검색수 500이상');
-      setFilters({ searchVolumeMin: 500 });
-    }
-  }, [filters, setFilters]);
+  // 기본 필터는 키워드 스토어에서 설정됨 (사용자 수정 가능)
 
   const fetchKeywords = useCallback(async (page = currentPage, size = pageSize) => {
     setLoading(true);
@@ -117,9 +110,7 @@ export default function DataPage() {
       
       if (sortField === 'cafe_count') {
         // 카페문서수 오름차순(1순위) + 총검색수 내림차순(2순위)
-        // 문서수가 0인 키워드는 제외
         orderQuery = orderQuery
-          .gt('cafe_count', 0) // 카페문서수가 0보다 큰 것만
           .order('cafe_count', { ascending: true })
           .order('monthly_pc_qc_cnt', { ascending: false });
       } else {

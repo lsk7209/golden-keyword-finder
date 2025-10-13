@@ -30,7 +30,7 @@ export const FilterSidebar = memo(function FilterSidebar({ filters, onFiltersCha
       searchTerm: '',
       goldenScoreRange: [0, 1000],
       competitionLevels: ['낮음', '중간', '높음'],
-      searchVolumeMin: 500, // 기본 필터: 총검색수 500이상
+      searchVolumeMin: 0, // 사용자가 자유롭게 수정 가능
       searchVolumeMax: 1000000,
       docCountMax: 1000000,
       cafeCountMin: 0,
@@ -43,6 +43,7 @@ export const FilterSidebar = memo(function FilterSidebar({ filters, onFiltersCha
       newsCountMax: 1000000,
       dateRange: [new Date(2020, 0, 1), new Date()],
       tags: [],
+      showZeroDocCount: false, // 기본적으로 문서수 0인 키워드 숨김
     };
     setLocalFilters(defaultFilters);
     onFiltersChange(defaultFilters);
@@ -316,6 +317,27 @@ export const FilterSidebar = memo(function FilterSidebar({ filters, onFiltersCha
           </div>
         </div>
 
+        {/* 문서수 0 표시 옵션 */}
+        <div>
+          <label className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={localFilters.showZeroDocCount}
+              onChange={(e) => setLocalFilters(prev => ({
+                ...prev,
+                showZeroDocCount: e.target.checked
+              }))}
+              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <span className="text-sm font-medium text-gray-700">
+              📄 문서수 0인 키워드 표시
+            </span>
+          </label>
+          <p className="text-xs text-gray-500 mt-1">
+            체크 해제 시 문서수가 0인 키워드는 숨겨집니다
+          </p>
+        </div>
+
         {/* 퀵 필터 */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -402,6 +424,11 @@ export const FilterSidebar = memo(function FilterSidebar({ filters, onFiltersCha
             {localFilters.newsCountMin > 0 && (
               <Badge variant="secondary">
                 뉴스: {localFilters.newsCountMin}+
+              </Badge>
+            )}
+            {!localFilters.showZeroDocCount && (
+              <Badge variant="secondary">
+                📄 문서수 0 숨김
               </Badge>
             )}
           </div>
