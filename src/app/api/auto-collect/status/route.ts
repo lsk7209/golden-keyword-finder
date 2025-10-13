@@ -13,7 +13,6 @@ export async function GET(request: NextRequest) {
       // 특정 세션 조회
       const { data: session, error } = await supabase
         .from('auto_collect_sessions')
-        // @ts-expect-error - auto_collect_sessions 테이블 타입이 아직 생성되지 않음
         .select('*')
         .eq('id', sessionId)
         .single();
@@ -33,7 +32,6 @@ export async function GET(request: NextRequest) {
       // 사용자의 모든 세션 조회
       const { data: sessions, error } = await supabase
         .from('auto_collect_sessions')
-        // @ts-expect-error - auto_collect_sessions 테이블 타입이 아직 생성되지 않음
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });

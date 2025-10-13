@@ -18,7 +18,6 @@ export async function POST(request: NextRequest) {
     // 세션 상태를 중지로 업데이트
     const { data, error } = await supabase
       .from('auto_collect_sessions')
-      // @ts-expect-error - auto_collect_sessions 테이블 타입이 아직 생성되지 않음
       .update({
         status: 'stopped',
         updated_at: new Date().toISOString(),
