@@ -28,7 +28,18 @@ export function SimpleKeywordTable({ keywords, isLoading, onRefresh }: SimpleKey
   // 정렬된 키워드를 메모이제이션
   const sortedKeywords = useMemo(() => {
     return [...keywords].sort((a, b) => {
-      // 1차 정렬: 선택된 필드 기준
+      // 기본 정렬: 카페문서수 오름차순 + 총검색수 내림차순 (카페문서수가 우선)
+      if (sortField === 'totalSearchVolume' && sortDirection === 'desc') {
+        // 1차 정렬: 카페문서수 오름차순 (적은 것이 좋음)
+        const cafeCountDiff = (a.cafeCount || 0) - (b.cafeCount || 0);
+        if (cafeCountDiff !== 0) {
+          return cafeCountDiff;
+        }
+        // 2차 정렬: 카페문서수가 같으면 총검색수 내림차순 (높은 것이 좋음)
+        return (b.totalSearchVolume || 0) - (a.totalSearchVolume || 0);
+      }
+      
+      // 다른 필드 정렬 시
       const aValue = a[sortField];
       const bValue = b[sortField];
       
@@ -46,15 +57,15 @@ export function SimpleKeywordTable({ keywords, isLoading, onRefresh }: SimpleKey
           : bValue.getTime() - aValue.getTime();
       }
       
-      // 1차 정렬이 같으면 2차 정렬: 총검색수 내림차순 + 카페문서수 오름차순
+      // 1차 정렬이 같으면 2차 정렬: 카페문서수 오름차순 + 총검색수 내림차순
       if (primarySort === 0) {
-        // 총검색수 내림차순
-        const searchVolumeDiff = (b.totalSearchVolume || 0) - (a.totalSearchVolume || 0);
-        if (searchVolumeDiff !== 0) {
-          return searchVolumeDiff;
+        // 카페문서수 오름차순 (적은 것이 좋음)
+        const cafeCountDiff = (a.cafeCount || 0) - (b.cafeCount || 0);
+        if (cafeCountDiff !== 0) {
+          return cafeCountDiff;
         }
-        // 총검색수도 같으면 카페문서수 오름차순
-        return (a.cafeCount || 0) - (b.cafeCount || 0);
+        // 카페문서수도 같으면 총검색수 내림차순 (높은 것이 좋음)
+        return (b.totalSearchVolume || 0) - (a.totalSearchVolume || 0);
       }
       
       return primarySort;
