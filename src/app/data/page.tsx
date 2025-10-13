@@ -48,9 +48,56 @@ export default function DataPage() {
       const offset = (page - 1) * size;
       console.log(`키워드 조회 시작: page=${page}, size=${size}, offset=${offset}`);
       
-      const { data, error, count } = await supabase
+      // 서버사이드 필터링 적용
+      let query = supabase
         .from('keywords')
-        .select('*', { count: 'exact' })
+        .select('*', { count: 'exact' });
+
+      // 검색어 필터
+      if (filters.searchTerm) {
+        query = query.ilike('keyword', `%${filters.searchTerm}%`);
+      }
+
+      // 경쟁도 필터
+      if (filters.competitionLevels.length > 0 && filters.competitionLevels.length < 3) {
+        query = query.in('comp_idx', filters.competitionLevels);
+      }
+
+      // 검색량 범위 필터
+      if (filters.searchVolumeMin > 0) {
+        query = query.gte('monthly_pc_qc_cnt', filters.searchVolumeMin);
+      }
+      if (filters.searchVolumeMax < 999999999) {
+        query = query.lte('monthly_pc_qc_cnt', filters.searchVolumeMax);
+      }
+
+      // 문서수 범위 필터
+      if (filters.cafeCountMin > 0) {
+        query = query.gte('cafe_count', filters.cafeCountMin);
+      }
+      if (filters.cafeCountMax < 999999999) {
+        query = query.lte('cafe_count', filters.cafeCountMax);
+      }
+      if (filters.blogCountMin > 0) {
+        query = query.gte('blog_count', filters.blogCountMin);
+      }
+      if (filters.blogCountMax < 999999999) {
+        query = query.lte('blog_count', filters.blogCountMax);
+      }
+      if (filters.webCountMin > 0) {
+        query = query.gte('web_count', filters.webCountMin);
+      }
+      if (filters.webCountMax < 999999999) {
+        query = query.lte('web_count', filters.webCountMax);
+      }
+      if (filters.newsCountMin > 0) {
+        query = query.gte('news_count', filters.newsCountMin);
+      }
+      if (filters.newsCountMax < 999999999) {
+        query = query.lte('news_count', filters.newsCountMax);
+      }
+
+      const { data, error, count } = await query
         .order('created_at', { ascending: false }) // 기본 정렬: 최신순
         .range(offset, offset + size - 1);
 
@@ -102,7 +149,7 @@ export default function DataPage() {
     } finally {
       setLoading(false);
     }
-  }, [setKeywords, setLoading]); // 의존성 배열에 필요한 함수들 추가
+  }, [setKeywords, setLoading, filters]); // 필터 의존성 추가
 
   const fetchStats = useCallback(async () => {
     try {
@@ -121,10 +168,15 @@ export default function DataPage() {
     setCurrentPage(page);
   }, []);
 
+  const handleFiltersChange = useCallback((newFilters: Partial<FilterOptions>) => {
+    setFilters(newFilters);
+    setCurrentPage(1); // 필터 변경 시 첫 페이지로 이동
+  }, [setFilters]);
+
   useEffect(() => {
     fetchKeywords(currentPage, pageSize);
     fetchStats();
-  }, [fetchKeywords, fetchStats, currentPage, pageSize]); // 페이지 변경 시에도 호출
+  }, [fetchKeywords, fetchStats, currentPage, pageSize, filters]); // 필터 변경 시에도 호출
 
 
   const handleBulkDelete = async () => {
@@ -382,7 +434,7 @@ export default function DataPage() {
           <div className="mb-6">
             <FilterSidebar
               filters={filters}
-              onFiltersChange={setFilters}
+              onFiltersChange={handleFiltersChange}
             />
           </div>
         )}
@@ -406,7 +458,7 @@ export default function DataPage() {
             <p>전체 키워드: {keywords.length}개</p>
             <p>필터링된 키워드: {filteredKeywords.length}개</p>
             <p>로딩 상태: {isLoading ? '로딩 중' : '완료'}</p>
-            <p>SimpleKeywordTable + 필터링 사용 중</p>
+            <p>서버사이드 필터링 + 페이지네이션 사용 중</p>
             {keywords.length > 0 && (
               <div>
                 <p>첫 번째 키워드: {keywords[0].keyword}</p>
@@ -424,7 +476,7 @@ export default function DataPage() {
           </CardHeader>
           <CardContent className="p-0">
             <SimpleKeywordTable
-              keywords={filteredKeywords}
+              keywords={keywords}
               isLoading={isLoading}
               onRefresh={() => fetchKeywords(currentPage, pageSize)}
             />
