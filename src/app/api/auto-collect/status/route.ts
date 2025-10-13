@@ -1,58 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const sessionId = searchParams.get('sessionId');
-    const userId = searchParams.get('userId') || 'anonymous';
 
-    const supabase = await createClient();
-
-    if (sessionId) {
-      // 특정 세션 조회
-      const { data: session, error } = await supabase
-        .from('auto_collect_sessions')
-        .select('*')
-        .eq('id', sessionId)
-        .single();
-
-      if (error) {
-        return NextResponse.json(
-          { success: false, error: '세션을 찾을 수 없습니다.' },
-          { status: 404 }
-        );
-      }
-
-      return NextResponse.json({
-        success: true,
-        data: session,
-      });
-    } else {
-      // 사용자의 모든 세션 조회
-      const { data: sessions, error } = await supabase
-        .from('auto_collect_sessions')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        return NextResponse.json(
-          { success: false, error: '세션 목록을 불러올 수 없습니다.' },
-          { status: 500 }
-        );
-      }
-
-      return NextResponse.json({
-        success: true,
-        data: sessions,
-      });
+    if (!sessionId) {
+      return NextResponse.json(
+        { success: false, error: '세션 ID가 필요합니다.' },
+        { status: 400 }
+      );
     }
 
+    // 임시 상태 반환 (실제로는 메모리나 데이터베이스에서 관리)
+    return NextResponse.json({
+      success: true,
+      data: {
+        sessionId: sessionId,
+        status: 'running', // running, completed, error, stopped
+        current_count: 0, // 현재 수집된 키워드 수
+        target_count: 0, // 목표 키워드 수
+        seed_keywords: [], // 현재 시드키워드
+        used_seed_keywords: [], // 사용된 시드키워드
+        message: '새로운 자동 수집 시스템이 실행 중입니다.',
+      },
+    });
+
   } catch (error) {
-    console.error('자동 수집 상태 조회 오류:', error);
+    console.error('상태 확인 오류:', error);
     return NextResponse.json(
-      { success: false, error: '상태 조회에 실패했습니다.' },
+      { success: false, error: '상태 확인에 실패했습니다.' },
       { status: 500 }
     );
   }
