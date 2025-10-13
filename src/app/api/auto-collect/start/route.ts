@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
       console.error('자동 수집 세션 생성 오류:', sessionError);
       
       // auto_collect_sessions 테이블이 없는 경우 임시로 UUID 생성
-      if (sessionError.code === '42P01') { // 테이블이 존재하지 않음
+      if (sessionError.code === '42P01' || sessionError.code === 'PGRST205') { // 테이블이 존재하지 않음
         console.log('테이블이 없음 - 임시 세션으로 처리');
         const tempSessionId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         
