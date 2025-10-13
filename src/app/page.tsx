@@ -61,30 +61,16 @@ export default function HomePage() {
 
         setSearchResults(naverKeywords);
 
-        // 서버에서 자동으로 저장된 결과 표시
-        if (result.data.saveResult) {
-          const { saved, failed, total, message } = result.data.saveResult;
-          
-          if (message) {
-            // 비동기 저장 메시지
-            setSaveNotification({
-              show: true,
-              message: `🔄 ${message}`,
-              type: 'info',
-            });
-          } else {
-            // 동기 저장 완료 메시지
-            setSaveNotification({
-              show: true,
-              message: `✅ ${saved}개 키워드가 서버에서 자동으로 데이터베이스에 저장되었습니다${failed > 0 ? ` (${failed}개 실패)` : ''}`,
-              type: failed > 0 ? 'error' : 'success',
-            });
-          }
+        // 클라이언트에서 자동 저장 시작
+        if (result.data.saveResult?.message) {
+          setSaveNotification({
+            show: true,
+            message: `🔄 ${result.data.saveResult.message}`,
+            type: 'info',
+          });
 
-          // 5초 후 알림 자동 숨김
-          setTimeout(() => {
-            setSaveNotification(prev => ({ ...prev, show: false }));
-          }, 5000);
+          // 클라이언트에서 자동 저장
+          handleClientSideSave(naverKeywords);
         }
 
         // 자동 문서수 조회 옵션이 켜져있으면
@@ -152,6 +138,51 @@ export default function HomePage() {
     } finally {
       setIsFetchingDocs(false);
     }
+  };
+
+  const handleClientSideSave = async (keywords: NaverKeyword[]) => {
+    let savedCount = 0;
+    let failedCount = 0;
+
+    for (const keyword of keywords) {
+      try {
+        const response = await fetch('/api/keywords/save', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(keyword),
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+          savedCount++;
+          console.log(`키워드 저장 성공: ${keyword.keyword}`);
+        } else {
+          failedCount++;
+          console.error(`키워드 저장 실패: ${keyword.keyword}`, result.error);
+        }
+      } catch (error) {
+        failedCount++;
+        console.error(`키워드 저장 오류: ${keyword.keyword}`, error);
+      }
+
+      // 저장 간격
+      await new Promise(resolve => setTimeout(resolve, 200));
+    }
+
+    // 저장 완료 알림
+    setSaveNotification({
+      show: true,
+      message: `✅ ${savedCount}개 키워드가 자동으로 데이터베이스에 저장되었습니다${failedCount > 0 ? ` (${failedCount}개 실패)` : ''}`,
+      type: failedCount > 0 ? 'error' : 'success',
+    });
+
+    // 5초 후 알림 자동 숨김
+    setTimeout(() => {
+      setSaveNotification(prev => ({ ...prev, show: false }));
+    }, 5000);
   };
 
   return (

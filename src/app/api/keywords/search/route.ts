@@ -147,21 +147,16 @@ export async function POST(request: NextRequest) {
       compIdx: k.compIdx,
     }));
 
-    // 자동 저장을 비동기로 처리 (API 응답을 빠르게 하기 위해)
-    console.log('서버에서 키워드 자동 저장 시작 (비동기)...');
-    
-    // 비동기로 저장 처리 (응답을 기다리지 않음)
-    saveKeywordsAsync(keywords).catch(error => {
-      console.error('비동기 저장 오류:', error);
-    });
+    // 자동 저장을 클라이언트에서 처리하도록 변경 (API 응답 속도 개선)
+    console.log('키워드 검색 완료, 클라이언트에서 저장 처리');
 
     const response: SearchKeywordsResponse = { 
       keywords,
       saveResult: {
-        saved: 0, // 비동기 처리 중이므로 0으로 표시
+        saved: 0,
         failed: 0,
         total: keywords.length,
-        message: '키워드가 백그라운드에서 자동 저장 중입니다.'
+        message: '검색 완료. 클라이언트에서 자동 저장을 시작합니다.'
       }
     };
 
