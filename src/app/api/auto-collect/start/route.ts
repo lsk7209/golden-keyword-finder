@@ -132,7 +132,6 @@ async function startBackgroundCollection(sessionId: string, seedKeywords: string
 
           const { error: insertError } = await supabase
             .from('keywords')
-            // @ts-expect-error - 키워드 객체 타입 호환성
             .insert(keywordObjects);
 
           if (insertError) {
