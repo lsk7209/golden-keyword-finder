@@ -10,67 +10,28 @@ interface SimpleKeywordTableProps {
   keywords: Keyword[];
   isLoading: boolean;
   onRefresh: () => void;
+  onSort?: (field: string) => void;
+  sortField?: string;
+  sortDirection?: 'asc' | 'desc';
 }
 
-export const SimpleKeywordTable = memo(function SimpleKeywordTable({ keywords, isLoading, onRefresh }: SimpleKeywordTableProps) {
-  const [sortField, setSortField] = useState<keyof Keyword>('totalSearchVolume');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+export const SimpleKeywordTable = memo(function SimpleKeywordTable({ 
+  keywords, 
+  isLoading, 
+  onRefresh, 
+  onSort, 
+  sortField: serverSortField, 
+  sortDirection: serverSortDirection 
+}: SimpleKeywordTableProps) {
 
-  const handleSort = (field: keyof Keyword) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortDirection('desc');
+  const handleSort = (field: string) => {
+    if (onSort) {
+      onSort(field);
     }
   };
 
-  // 정렬된 키워드를 메모이제이션
-  const sortedKeywords = useMemo(() => {
-    return [...keywords].sort((a, b) => {
-      // 기본 정렬: 카페문서수 오름차순 + 총검색수 내림차순 (카페문서수가 우선)
-      if (sortField === 'totalSearchVolume' && sortDirection === 'desc') {
-        // 1차 정렬: 카페문서수 오름차순 (적은 것이 좋음)
-        const cafeCountDiff = (a.cafeCount || 0) - (b.cafeCount || 0);
-        if (cafeCountDiff !== 0) {
-          return cafeCountDiff;
-        }
-        // 2차 정렬: 카페문서수가 같으면 총검색수 내림차순 (높은 것이 좋음)
-        return (b.totalSearchVolume || 0) - (a.totalSearchVolume || 0);
-      }
-      
-      // 다른 필드 정렬 시
-      const aValue = a[sortField];
-      const bValue = b[sortField];
-      
-      let primarySort = 0;
-      
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        primarySort = sortDirection === 'asc' 
-          ? aValue.localeCompare(bValue)
-          : bValue.localeCompare(aValue);
-      } else if (typeof aValue === 'number' && typeof bValue === 'number') {
-        primarySort = sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
-      } else if (aValue instanceof Date && bValue instanceof Date) {
-        primarySort = sortDirection === 'asc' 
-          ? aValue.getTime() - bValue.getTime()
-          : bValue.getTime() - aValue.getTime();
-      }
-      
-      // 1차 정렬이 같으면 2차 정렬: 카페문서수 오름차순 + 총검색수 내림차순
-      if (primarySort === 0) {
-        // 카페문서수 오름차순 (적은 것이 좋음)
-        const cafeCountDiff = (a.cafeCount || 0) - (b.cafeCount || 0);
-        if (cafeCountDiff !== 0) {
-          return cafeCountDiff;
-        }
-        // 카페문서수도 같으면 총검색수 내림차순 (높은 것이 좋음)
-        return (b.totalSearchVolume || 0) - (a.totalSearchVolume || 0);
-      }
-      
-      return primarySort;
-    });
-  }, [keywords, sortField, sortDirection]);
+  // 서버에서 정렬된 데이터를 그대로 사용
+  const sortedKeywords = keywords;
 
 
   if (isLoading) {
@@ -119,116 +80,116 @@ export const SimpleKeywordTable = memo(function SimpleKeywordTable({ keywords, i
                 onClick={() => handleSort('keyword')}
               >
                 키워드
-                {sortField === 'keyword' && (
-                  <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                {serverSortField === 'keyword' && (
+                  <span className="ml-1">{serverSortDirection === 'asc' ? '↑' : '↓'}</span>
                 )}
               </th>
               <th 
                 className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                onClick={() => handleSort('totalSearchVolume')}
+                onClick={() => handleSort('monthly_pc_qc_cnt')}
               >
                 총 검색수
-                {sortField === 'totalSearchVolume' && (
-                  <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                {serverSortField === 'monthly_pc_qc_cnt' && (
+                  <span className="ml-1">{serverSortDirection === 'asc' ? '↑' : '↓'}</span>
                 )}
               </th>
               <th 
                 className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                onClick={() => handleSort('cafeCount')}
+                onClick={() => handleSort('cafe_count')}
               >
                 카페문서수
-                {sortField === 'cafeCount' && (
-                  <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                {serverSortField === 'cafe_count' && (
+                  <span className="ml-1">{serverSortDirection === 'asc' ? '↑' : '↓'}</span>
                 )}
               </th>
               <th 
                 className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                onClick={() => handleSort('blogCount')}
+                onClick={() => handleSort('blog_count')}
               >
                 블로그문서수
-                {sortField === 'blogCount' && (
-                  <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                {serverSortField === 'blog_count' && (
+                  <span className="ml-1">{serverSortDirection === 'asc' ? '↑' : '↓'}</span>
                 )}
               </th>
               <th 
                 className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                onClick={() => handleSort('webCount')}
+                onClick={() => handleSort('web_count')}
               >
                 웹문서수
-                {sortField === 'webCount' && (
-                  <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                {serverSortField === 'web_count' && (
+                  <span className="ml-1">{serverSortDirection === 'asc' ? '↑' : '↓'}</span>
                 )}
               </th>
               <th 
                 className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                onClick={() => handleSort('newsCount')}
+                onClick={() => handleSort('news_count')}
               >
                 뉴스문서수
-                {sortField === 'newsCount' && (
-                  <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                {serverSortField === 'news_count' && (
+                  <span className="ml-1">{serverSortDirection === 'asc' ? '↑' : '↓'}</span>
                 )}
               </th>
               <th 
                 className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                onClick={() => handleSort('monthlyPcQcCnt')}
+                onClick={() => handleSort('monthly_pc_qc_cnt')}
               >
                 PC 검색수
-                {sortField === 'monthlyPcQcCnt' && (
-                  <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                {serverSortField === 'monthly_pc_qc_cnt' && (
+                  <span className="ml-1">{serverSortDirection === 'asc' ? '↑' : '↓'}</span>
                 )}
               </th>
               <th 
                 className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                onClick={() => handleSort('monthlyMobileQcCnt')}
+                onClick={() => handleSort('monthly_mobile_qc_cnt')}
               >
                 모바일 검색수
-                {sortField === 'monthlyMobileQcCnt' && (
-                  <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                {serverSortField === 'monthly_mobile_qc_cnt' && (
+                  <span className="ml-1">{serverSortDirection === 'asc' ? '↑' : '↓'}</span>
                 )}
               </th>
               <th 
                 className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                onClick={() => handleSort('compIdx')}
+                onClick={() => handleSort('comp_idx')}
               >
                 경쟁도
-                {sortField === 'compIdx' && (
-                  <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                {serverSortField === 'comp_idx' && (
+                  <span className="ml-1">{serverSortDirection === 'asc' ? '↑' : '↓'}</span>
                 )}
               </th>
               <th 
                 className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                onClick={() => handleSort('monthlyAvePcCtr')}
+                onClick={() => handleSort('monthly_ave_pc_ctr')}
               >
                 PC CTR
-                {sortField === 'monthlyAvePcCtr' && (
-                  <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                {serverSortField === 'monthly_ave_pc_ctr' && (
+                  <span className="ml-1">{serverSortDirection === 'asc' ? '↑' : '↓'}</span>
                 )}
               </th>
               <th 
                 className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                onClick={() => handleSort('monthlyAveMobileCtr')}
+                onClick={() => handleSort('monthly_ave_mobile_ctr')}
               >
                 모바일 CTR
-                {sortField === 'monthlyAveMobileCtr' && (
-                  <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                {serverSortField === 'monthly_ave_mobile_ctr' && (
+                  <span className="ml-1">{serverSortDirection === 'asc' ? '↑' : '↓'}</span>
                 )}
               </th>
               <th 
                 className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                onClick={() => handleSort('plAvgDepth')}
+                onClick={() => handleSort('pl_avg_depth')}
               >
                 광고수
-                {sortField === 'plAvgDepth' && (
-                  <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                {serverSortField === 'pl_avg_depth' && (
+                  <span className="ml-1">{serverSortDirection === 'asc' ? '↑' : '↓'}</span>
                 )}
               </th>
               <th 
                 className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                onClick={() => handleSort('createdAt')}
+                onClick={() => handleSort('created_at')}
               >
                 저장일
-                {sortField === 'createdAt' && (
-                  <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                {serverSortField === 'created_at' && (
+                  <span className="ml-1">{serverSortDirection === 'asc' ? '↑' : '↓'}</span>
                 )}
               </th>
             </tr>

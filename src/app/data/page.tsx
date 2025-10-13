@@ -40,6 +40,10 @@ export default function DataPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(100);
   const [totalCount, setTotalCount] = useState(0);
+  
+  // 정렬 상태
+  const [sortField, setSortField] = useState<string>('created_at');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
   const fetchKeywords = useCallback(async (page = currentPage, size = pageSize) => {
     setLoading(true);
@@ -97,8 +101,9 @@ export default function DataPage() {
         query = query.lte('news_count', filters.newsCountMax);
       }
 
+      // 서버사이드 정렬 적용
       const { data, error, count } = await query
-        .order('created_at', { ascending: false }) // 기본 정렬: 최신순
+        .order(sortField, { ascending: sortDirection === 'asc' })
         .range(offset, offset + size - 1);
 
       if (error) {
@@ -149,7 +154,7 @@ export default function DataPage() {
     } finally {
       setLoading(false);
     }
-  }, [setKeywords, setLoading, filters, currentPage, pageSize]); // 모든 의존성 추가
+  }, [setKeywords, setLoading, filters, currentPage, pageSize, sortField, sortDirection]); // 정렬 의존성 추가
 
   const fetchStats = useCallback(async () => {
     try {
@@ -173,10 +178,20 @@ export default function DataPage() {
     setCurrentPage(1); // 필터 변경 시 첫 페이지로 이동
   }, [setFilters]);
 
+  const handleSort = useCallback((field: string) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('desc'); // 기본값은 내림차순
+    }
+    setCurrentPage(1); // 정렬 변경 시 첫 페이지로 이동
+  }, [sortField, sortDirection]);
+
   useEffect(() => {
     fetchKeywords(currentPage, pageSize);
     fetchStats();
-  }, [fetchKeywords, fetchStats, currentPage, pageSize, filters]); // 필터 변경 시에도 호출
+  }, [fetchKeywords, fetchStats, currentPage, pageSize, filters, sortField, sortDirection]); // 정렬 변경 시에도 호출
 
 
   const handleBulkDelete = async () => {
@@ -479,6 +494,9 @@ export default function DataPage() {
               keywords={keywords}
               isLoading={isLoading}
               onRefresh={() => fetchKeywords(currentPage, pageSize)}
+              onSort={handleSort}
+              sortField={sortField}
+              sortDirection={sortDirection}
             />
             <Pagination
               currentPage={currentPage}
