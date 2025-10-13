@@ -180,6 +180,7 @@ async function startBackgroundCollection(sessionId: string, seedKeywords: string
                 const docCounts = await getDocumentCounts(keywordObj.keyword);
                 await supabase
                   .from('keywords')
+                  // @ts-expect-error - Supabase 타입 정의 문제로 임시 처리
                   .update({
                     blog_count: docCounts.blogCount,
                     cafe_count: docCounts.cafeCount,
