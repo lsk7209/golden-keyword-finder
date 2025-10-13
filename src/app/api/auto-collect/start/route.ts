@@ -178,19 +178,17 @@ async function startBackgroundCollection(sessionId: string, seedKeywords: string
             for (const keywordObj of keywordObjects) {
               try {
                 const docCounts = await getDocumentCounts(keywordObj.keyword);
-                if (docCounts.success && docCounts.data) {
-                  await supabase
-                    .from('keywords')
-                    .update({
-                      blog_count: docCounts.data.blogCount,
-                      cafe_count: docCounts.data.cafeCount,
-                      web_count: docCounts.data.newsCount,
-                      news_count: docCounts.data.newsCount,
-                      updated_at: new Date().toISOString(),
-                    })
-                    .eq('keyword', keywordObj.keyword);
-                  console.log(`"${keywordObj.keyword}" 문서수 업데이트 완료`);
-                }
+                await supabase
+                  .from('keywords')
+                  .update({
+                    blog_count: docCounts.blogCount,
+                    cafe_count: docCounts.cafeCount,
+                    web_count: docCounts.webCount,
+                    news_count: docCounts.newsCount,
+                    updated_at: new Date().toISOString(),
+                  })
+                  .eq('keyword', keywordObj.keyword);
+                console.log(`"${keywordObj.keyword}" 문서수 업데이트 완료:`, docCounts);
               } catch (docError) {
                 console.error(`"${keywordObj.keyword}" 문서수 조회 오류:`, docError);
               }
@@ -255,7 +253,7 @@ async function startBackgroundCollection(sessionId: string, seedKeywords: string
             updated_at: new Date().toISOString(),
           })
           .eq('id', sessionId);
-      } catch (updateError) {
+      } catch {
         // 테이블이 없는 경우 무시
         console.log('세션 상태 업데이트 건너뜀 (테이블 없음)');
       }
@@ -275,7 +273,7 @@ async function startBackgroundCollection(sessionId: string, seedKeywords: string
           updated_at: new Date().toISOString(),
         })
         .eq('id', sessionId);
-    } catch (updateError) {
+    } catch {
       // 테이블이 없는 경우 무시
       console.log('자동 수집 완료 상태 업데이트 건너뜀 (테이블 없음)');
     }
@@ -295,7 +293,7 @@ async function startBackgroundCollection(sessionId: string, seedKeywords: string
           updated_at: new Date().toISOString(),
         })
         .eq('id', sessionId);
-    } catch (updateError) {
+    } catch {
       // 테이블이 없는 경우 무시
       console.log('오류 상태 업데이트 건너뜀 (테이블 없음)');
     }
