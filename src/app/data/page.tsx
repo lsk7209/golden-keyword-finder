@@ -54,7 +54,7 @@ export default function DataPage() {
       console.log(`키워드 조회 시작: page=${page}, size=${size}`);
       
       // 모든 키워드를 가져와서 클라이언트에서 필터링 및 정렬
-      const { data: allData, error, count } = await supabase
+      const { data: allData, error } = await supabase
         .from('keywords')
         .select('*', { count: 'exact' })
         .order('created_at', { ascending: false }); // 기본 정렬로 모든 데이터 가져오기

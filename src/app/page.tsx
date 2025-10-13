@@ -339,7 +339,17 @@ export default function HomePage() {
           // 새로운 키워드만 필터링하여 추가
           const uniqueNewKeywordObjects = newKeywords.filter(k => 
             uniqueNewKeywords.includes(k.keyword)
-          );
+          ).map(k => ({
+            keyword: k.keyword,
+            monthlyPcQcCnt: k.monthlyPcQcCnt.toString(),
+            monthlyMobileQcCnt: k.monthlyMobileQcCnt.toString(),
+            monthlyAvePcClkCnt: k.monthlyAvePcClkCnt.toString(),
+            monthlyAveMobileClkCnt: k.monthlyAveMobileClkCnt.toString(),
+            monthlyAvePcCtr: k.monthlyAvePcCtr.toString(),
+            monthlyAveMobileCtr: k.monthlyAveMobileCtr.toString(),
+            plAvgDepth: k.plAvgDepth.toString(),
+            compIdx: k.compIdx,
+          }));
           
           // 검색 결과에 새로운 키워드 추가
           setSearchResults(prev => [...prev, ...uniqueNewKeywordObjects]);
