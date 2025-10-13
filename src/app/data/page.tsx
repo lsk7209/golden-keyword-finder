@@ -51,75 +51,13 @@ export default function DataPage() {
     setLoading(true);
     setError(null);
     try {
-      const offset = (page - 1) * size;
-      console.log(`키워드 조회 시작: page=${page}, size=${size}, offset=${offset}, searchVolumeMin=${filters.searchVolumeMin}`);
+      console.log(`키워드 조회 시작: page=${page}, size=${size}`);
       
-      // 서버사이드 필터링 적용
-      let query = supabase
+      // 모든 키워드를 가져와서 클라이언트에서 필터링 및 정렬
+      const { data: allData, error, count } = await supabase
         .from('keywords')
-        .select('*', { count: 'exact' });
-
-      // 검색어 필터
-      if (filters.searchTerm) {
-        query = query.ilike('keyword', `%${filters.searchTerm}%`);
-      }
-
-      // 경쟁도 필터
-      if (filters.competitionLevels.length > 0 && filters.competitionLevels.length < 3) {
-        query = query.in('comp_idx', filters.competitionLevels);
-      }
-
-      // 검색량 범위 필터 (PC 검색수로 대략적 필터링, 정확한 총검색수는 클라이언트에서 처리)
-      if (filters.searchVolumeMin > 0) {
-        // PC 검색수가 최소값 이상인 키워드 필터링 (대략적)
-        query = query.gte('monthly_pc_qc_cnt', filters.searchVolumeMin);
-      }
-      if (filters.searchVolumeMax < 999999999) {
-        // PC 검색수가 최대값 이하인 키워드 필터링
-        query = query.lte('monthly_pc_qc_cnt', filters.searchVolumeMax);
-      }
-
-      // 문서수 범위 필터
-      if (filters.cafeCountMin > 0) {
-        query = query.gte('cafe_count', filters.cafeCountMin);
-      }
-      if (filters.cafeCountMax < 999999999) {
-        query = query.lte('cafe_count', filters.cafeCountMax);
-      }
-      if (filters.blogCountMin > 0) {
-        query = query.gte('blog_count', filters.blogCountMin);
-      }
-      if (filters.blogCountMax < 999999999) {
-        query = query.lte('blog_count', filters.blogCountMax);
-      }
-      if (filters.webCountMin > 0) {
-        query = query.gte('web_count', filters.webCountMin);
-      }
-      if (filters.webCountMax < 999999999) {
-        query = query.lte('web_count', filters.webCountMax);
-      }
-      if (filters.newsCountMin > 0) {
-        query = query.gte('news_count', filters.newsCountMin);
-      }
-      if (filters.newsCountMax < 999999999) {
-        query = query.lte('news_count', filters.newsCountMax);
-      }
-
-      // 서버사이드 다중 정렬 적용
-      let orderQuery = query;
-      
-      if (sortField === 'cafe_count') {
-        // 카페문서수 오름차순(1순위) + 총검색수 내림차순(2순위)
-        orderQuery = orderQuery
-          .order('cafe_count', { ascending: true })
-          .order('monthly_pc_qc_cnt', { ascending: false });
-      } else {
-        // 다른 필드 정렬 시 기본 정렬
-        orderQuery = orderQuery.order(sortField, { ascending: sortDirection === 'asc' });
-      }
-      
-      const { data, error, count } = await orderQuery
-        .range(offset, offset + size - 1);
+        .select('*', { count: 'exact' })
+        .order('created_at', { ascending: false }); // 기본 정렬로 모든 데이터 가져오기
 
       if (error) {
         console.error('Supabase 오류:', error);
@@ -127,9 +65,9 @@ export default function DataPage() {
         throw error;
       }
 
-      if (data) {
+      if (allData) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const keywords: Keyword[] = data.map((item: any) => ({
+        const allKeywords: Keyword[] = allData.map((item: any) => ({
           id: item.id,
           keyword: item.keyword,
           monthlyPcQcCnt: item.monthly_pc_qc_cnt,
@@ -155,10 +93,116 @@ export default function DataPage() {
           lastCheckedAt: item.last_checked_at || undefined,
         }));
 
-        setKeywords(keywords);
-        setTotalCount(count || 0);
+        // 클라이언트사이드 필터링 적용
+        const filteredKeywords = allKeywords.filter(keyword => {
+          // 검색어 필터
+          if (filters.searchTerm && !keyword.keyword.toLowerCase().includes(filters.searchTerm.toLowerCase())) {
+            return false;
+          }
+          
+          // 황금점수 범위
+          const goldenScore = keyword.goldenScore ?? 0;
+          if (goldenScore < filters.goldenScoreRange[0] || goldenScore > filters.goldenScoreRange[1]) {
+            return false;
+          }
+          
+          // 경쟁도
+          const compIdx = keyword.compIdx ?? '중간';
+          if (!filters.competitionLevels.includes(compIdx)) {
+            return false;
+          }
+          
+          // 검색량 범위
+          const totalSearchVolume = keyword.totalSearchVolume ?? 0;
+          if (totalSearchVolume < filters.searchVolumeMin || totalSearchVolume > filters.searchVolumeMax) {
+            return false;
+          }
+          
+          // 문서수 최대값
+          const totalDocCount = keyword.totalDocCount ?? 0;
+          if (totalDocCount > filters.docCountMax) {
+            return false;
+          }
+          
+          // 카페 문서수 범위
+          const cafeCount = keyword.cafeCount ?? 0;
+          if (cafeCount < filters.cafeCountMin || cafeCount > filters.cafeCountMax) {
+            return false;
+          }
+          
+          // 블로그 문서수 범위
+          const blogCount = keyword.blogCount ?? 0;
+          if (blogCount < filters.blogCountMin || blogCount > filters.blogCountMax) {
+            return false;
+          }
+          
+          // 웹 문서수 범위
+          const webCount = keyword.webCount ?? 0;
+          if (webCount < filters.webCountMin || webCount > filters.webCountMax) {
+            return false;
+          }
+          
+          // 뉴스 문서수 범위
+          const newsCount = keyword.newsCount ?? 0;
+          if (newsCount < filters.newsCountMin || newsCount > filters.newsCountMax) {
+            return false;
+          }
+          
+          // 문서수 0 표시 옵션
+          if (!filters.showZeroDocCount && totalDocCount === 0) {
+            return false;
+          }
+          
+          // 날짜 범위
+          const createdAt = new Date(keyword.createdAt);
+          if (createdAt < filters.dateRange[0] || createdAt > filters.dateRange[1]) {
+            return false;
+          }
+          
+          // 태그 필터
+          if (filters.tags.length > 0) {
+            const hasMatchingTag = filters.tags.some(tag => keyword.tags.includes(tag));
+            if (!hasMatchingTag) {
+              return false;
+            }
+          }
+          
+          return true;
+        });
+
+        // 클라이언트사이드 정렬 적용
+        const sortedKeywords = [...filteredKeywords].sort((a, b) => {
+          if (sortField === 'cafe_count') {
+            // 카페문서수 오름차순(1순위) + 총검색수 내림차순(2순위)
+            const cafeA = a.cafeCount ?? 0;
+            const cafeB = b.cafeCount ?? 0;
+            if (cafeA !== cafeB) {
+              return cafeA - cafeB; // 오름차순
+            }
+            // 카페문서수가 같으면 총검색수로 정렬
+            const totalA = a.totalSearchVolume ?? 0;
+            const totalB = b.totalSearchVolume ?? 0;
+            return totalB - totalA; // 내림차순
+          } else {
+            // 다른 필드 정렬
+            const aValue = a[sortField as keyof Keyword] as number;
+            const bValue = b[sortField as keyof Keyword] as number;
+            if (sortDirection === 'asc') {
+              return (aValue ?? 0) - (bValue ?? 0);
+            } else {
+              return (bValue ?? 0) - (aValue ?? 0);
+            }
+          }
+        });
+
+        // 페이지네이션 적용
+        const offset = (page - 1) * size;
+        const paginatedKeywords = sortedKeywords.slice(offset, offset + size);
+
+        setKeywords(paginatedKeywords);
+        setTotalCount(sortedKeywords.length); // 필터링된 전체 개수
         setLastUpdateTime(new Date());
-        console.log(`키워드 조회 완료: ${keywords.length}개 (총 ${count}개)`);
+        console.log(`키워드 조회 완료: ${paginatedKeywords.length}개 (필터링된 총 ${sortedKeywords.length}개, 전체 ${allKeywords.length}개)`);
       } else {
         console.log('데이터가 없습니다.');
         setKeywords([]);
@@ -509,7 +553,7 @@ export default function DataPage() {
             <p>전체 키워드: {keywords.length}개</p>
             <p>필터링된 키워드: {filteredKeywords.length}개</p>
             <p>로딩 상태: {isLoading ? '로딩 중' : '완료'}</p>
-            <p>서버사이드 필터링 + 페이지네이션 사용 중</p>
+            <p>클라이언트사이드 필터링 + 정렬 + 페이지네이션 사용 중</p>
             {keywords.length > 0 && (
               <div>
                 <p>첫 번째 키워드: {keywords[0].keyword}</p>
@@ -529,7 +573,7 @@ export default function DataPage() {
           </CardHeader>
           <CardContent className="p-0">
             <SimpleKeywordTable
-              keywords={filteredKeywords}
+              keywords={keywords}
               isLoading={isLoading}
               onRefresh={() => fetchKeywords(currentPage, pageSize)}
               onSort={handleSort}
