@@ -68,11 +68,13 @@ export default function DataPage() {
         query = query.in('comp_idx', filters.competitionLevels);
       }
 
-      // 검색량 범위 필터
+      // 검색량 범위 필터 (PC 검색수로 대략적 필터링, 정확한 총검색수는 클라이언트에서 처리)
       if (filters.searchVolumeMin > 0) {
-        query = query.gte('monthly_pc_qc_cnt', filters.searchVolumeMin);
+        // PC 검색수가 최소값의 절반 이상인 키워드 필터링 (대략적)
+        query = query.gte('monthly_pc_qc_cnt', Math.floor(filters.searchVolumeMin / 2));
       }
       if (filters.searchVolumeMax < 999999999) {
+        // PC 검색수가 최대값 이하인 키워드 필터링
         query = query.lte('monthly_pc_qc_cnt', filters.searchVolumeMax);
       }
 
