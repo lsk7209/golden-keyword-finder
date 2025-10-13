@@ -218,13 +218,13 @@ export default function DataPage() {
         const offset = (page - 1) * size;
         const paginatedKeywords = sortedKeywords.slice(offset, offset + size);
 
-        setKeywords(paginatedKeywords);
+        setKeywords(paginatedKeywords as Keyword[]);
         setTotalCount(sortedKeywords.length); // 필터링된 전체 개수
         setLastUpdateTime(new Date());
         console.log(`키워드 조회 완료: ${paginatedKeywords.length}개 (필터링된 총 ${sortedKeywords.length}개, 전체 ${allKeywords.length}개)`);
       } else {
         console.log('데이터가 없습니다.');
-        setKeywords([]);
+        setKeywords([] as Keyword[]);
       }
     } catch (error) {
       console.error('키워드 조회 오류:', error);
@@ -388,7 +388,7 @@ export default function DataPage() {
           }));
 
           // 검색 결과에 새로운 키워드 추가
-          setKeywords(prev => [...prev, ...uniqueNewKeywordObjects]);
+          setKeywords((prev: Keyword[]) => [...prev, ...uniqueNewKeywordObjects]);
           setCollectedKeywords(prev => [...prev, ...uniqueNewKeywords]);
           setAutoCollectCurrent(prev => prev + uniqueNewKeywords.length);
 
@@ -466,7 +466,7 @@ export default function DataPage() {
 
       // 로컬 상태 업데이트
       const updatedKeywords = keywords.filter(k => !selectedIds.includes(k.id));
-      setKeywords(updatedKeywords);
+      setKeywords(updatedKeywords as Keyword[]);
       clearSelection();
 
       console.log(`${selectedIds.length}개 키워드가 삭제되었습니다.`);
