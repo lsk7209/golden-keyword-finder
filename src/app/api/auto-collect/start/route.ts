@@ -101,34 +101,26 @@ export async function POST(request: NextRequest) {
 async function startBackgroundCollection(sessionId: string, seedKeywords: string[], targetCount: number) {
   const supabase = await createClient();
   let currentSeedKeywords = [...seedKeywords];
-  const usedSeedKeywords = new Set(seedKeywords);
+  const usedSeedKeywords = new Set(seedKeywords); // 시드로 사용된 키워드만 추적
+  const allCollectedKeywords = new Set(seedKeywords); // 수집된 모든 키워드 추적
   let currentCount = 0;
 
   try {
     while (currentCount < targetCount) {
-      // 현재 시드키워드로 검색
-      const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/keywords/search`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          seedKeywords: currentSeedKeywords,
-          showDetail: true,
-          autoFetchDocs: true,
-        }),
-      });
+      // 현재 시드키워드로 검색 (직접 네이버 API 호출)
+      console.log(`시드키워드로 검색 중: ${currentSeedKeywords.join(', ')}`);
+      
+      // 네이버 API 직접 호출 (fetch 대신)
+      const { getRelatedKeywords } = await import('@/lib/naver/search');
+      const relatedKeywordsResult = await getRelatedKeywords(currentSeedKeywords);
 
-      const result = await response.json();
-
-      if (result.success && result.data) {
-        const newKeywords = result.data.keywords;
+      if (relatedKeywordsResult.success && relatedKeywordsResult.data) {
+        const newKeywords = relatedKeywordsResult.data.keywords;
         const newKeywordNames = newKeywords.map((k: { keyword: string }) => k.keyword);
         
         // 중복 제거하여 새로운 키워드만 추가
-        const allUsedKeywords = Array.from(usedSeedKeywords);
         const uniqueNewKeywords = newKeywordNames.filter(
-          (keyword: string) => !allUsedKeywords.includes(keyword)
+          (keyword: string) => !allCollectedKeywords.has(keyword)
         );
 
         if (uniqueNewKeywords.length > 0) {
@@ -173,6 +165,9 @@ async function startBackgroundCollection(sessionId: string, seedKeywords: string
             currentCount += uniqueNewKeywords.length;
             console.log(`새로운 키워드 ${uniqueNewKeywords.length}개 저장 완료. 총 수집: ${currentCount}개`);
             
+            // 수집된 키워드를 allCollectedKeywords에 추가
+            uniqueNewKeywords.forEach(keyword => allCollectedKeywords.add(keyword));
+            
             // 새로 저장된 키워드에 대해 문서수 자동 조회
             console.log('문서수 자동 조회 시작...');
             for (const keywordObj of keywordObjects) {
@@ -208,14 +203,15 @@ async function startBackgroundCollection(sessionId: string, seedKeywords: string
               currentSeedKeywords.forEach(keyword => usedSeedKeywords.add(keyword));
             } else {
               // 새로 수집된 키워드가 모두 이미 사용되었다면, 기존 수집된 키워드에서 찾기
-              const allCollectedKeywords = Array.from(usedSeedKeywords);
-              const unusedKeywords = allCollectedKeywords.filter(
-                (keyword: string) => !currentSeedKeywords.includes(keyword)
+              const allCollectedArray = Array.from(allCollectedKeywords);
+              const unusedKeywords = allCollectedArray.filter(
+                (keyword: string) => !usedSeedKeywords.has(keyword)
               );
               
               if (unusedKeywords.length > 0) {
                 currentSeedKeywords = unusedKeywords.slice(0, 3);
                 console.log(`대체 시드키워드 설정: ${currentSeedKeywords.join(', ')}`);
+                currentSeedKeywords.forEach(keyword => usedSeedKeywords.add(keyword));
               } else {
                 console.log('더 이상 사용할 수 있는 시드키워드가 없습니다.');
                 break;
@@ -225,15 +221,17 @@ async function startBackgroundCollection(sessionId: string, seedKeywords: string
         } else {
           // 새로운 키워드가 없으면 다른 시드키워드 시도
           console.log('새로운 키워드가 없음. 다른 시드키워드 시도 중...');
-          const allCollectedKeywords = Array.from(usedSeedKeywords);
-          const remainingKeywords = allCollectedKeywords.filter(
-            (keyword: string) => !currentSeedKeywords.includes(keyword)
+          const allCollectedArray = Array.from(allCollectedKeywords);
+          const remainingKeywords = allCollectedArray.filter(
+            (keyword: string) => !usedSeedKeywords.has(keyword)
           );
+          
+          console.log(`사용 가능한 키워드: ${remainingKeywords.length}개`, remainingKeywords.slice(0, 10));
           
           if (remainingKeywords.length > 0) {
             currentSeedKeywords = remainingKeywords.slice(0, 3);
             console.log(`대체 시드키워드 설정: ${currentSeedKeywords.join(', ')}`);
-            // 이미 usedSeedKeywords에 포함되어 있으므로 추가로 add할 필요 없음
+            currentSeedKeywords.forEach(keyword => usedSeedKeywords.add(keyword));
           } else {
             // 더 이상 수집할 키워드가 없음
             console.log('더 이상 사용할 수 있는 시드키워드가 없습니다.');
