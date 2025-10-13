@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getDocumentCounts } from '@/lib/naver/documents';
 
 export async function POST(request: NextRequest) {
   try {
@@ -170,28 +171,73 @@ async function startBackgroundCollection(sessionId: string, seedKeywords: string
             console.error('키워드 저장 오류:', insertError);
           } else {
             currentCount += uniqueNewKeywords.length;
+            console.log(`새로운 키워드 ${uniqueNewKeywords.length}개 저장 완료. 총 수집: ${currentCount}개`);
             
-            // 다음 시드키워드 설정 (사용되지 않은 키워드만)
+            // 새로 저장된 키워드에 대해 문서수 자동 조회
+            console.log('문서수 자동 조회 시작...');
+            for (const keywordObj of keywordObjects) {
+              try {
+                const docCounts = await getDocumentCounts(keywordObj.keyword);
+                if (docCounts.success && docCounts.data) {
+                  await supabase
+                    .from('keywords')
+                    .update({
+                      blog_count: docCounts.data.blogCount,
+                      cafe_count: docCounts.data.cafeCount,
+                      web_count: docCounts.data.newsCount,
+                      news_count: docCounts.data.newsCount,
+                      updated_at: new Date().toISOString(),
+                    })
+                    .eq('keyword', keywordObj.keyword);
+                  console.log(`"${keywordObj.keyword}" 문서수 업데이트 완료`);
+                }
+              } catch (docError) {
+                console.error(`"${keywordObj.keyword}" 문서수 조회 오류:`, docError);
+              }
+            }
+            
+            // 다음 시드키워드 설정 (새로 수집된 키워드 중에서 아직 시드로 사용되지 않은 키워드)
             const availableKeywords = uniqueNewKeywords.filter(
               (keyword: string) => !usedSeedKeywords.has(keyword)
             );
-            currentSeedKeywords = availableKeywords.slice(0, 3);
             
-            // 사용된 시드키워드에 추가
-            currentSeedKeywords.forEach(keyword => usedSeedKeywords.add(keyword));
+            if (availableKeywords.length > 0) {
+              currentSeedKeywords = availableKeywords.slice(0, 3);
+              console.log(`다음 시드키워드 설정: ${currentSeedKeywords.join(', ')}`);
+              
+              // 새로 선택된 시드키워드를 사용된 키워드에 추가
+              currentSeedKeywords.forEach(keyword => usedSeedKeywords.add(keyword));
+            } else {
+              // 새로 수집된 키워드가 모두 이미 사용되었다면, 기존 수집된 키워드에서 찾기
+              const allCollectedKeywords = Array.from(usedSeedKeywords);
+              const unusedKeywords = allCollectedKeywords.filter(
+                (keyword: string) => !currentSeedKeywords.includes(keyword)
+              );
+              
+              if (unusedKeywords.length > 0) {
+                currentSeedKeywords = unusedKeywords.slice(0, 3);
+                console.log(`대체 시드키워드 설정: ${currentSeedKeywords.join(', ')}`);
+              } else {
+                console.log('더 이상 사용할 수 있는 시드키워드가 없습니다.');
+                break;
+              }
+            }
           }
         } else {
           // 새로운 키워드가 없으면 다른 시드키워드 시도
-          const allKeywords = Array.from(usedSeedKeywords);
-          const remainingKeywords = allKeywords.filter(
-            (keyword: string) => !currentSeedKeywords.includes(keyword) && !usedSeedKeywords.has(keyword)
+          console.log('새로운 키워드가 없음. 다른 시드키워드 시도 중...');
+          const allCollectedKeywords = Array.from(usedSeedKeywords);
+          const remainingKeywords = allCollectedKeywords.filter(
+            (keyword: string) => !currentSeedKeywords.includes(keyword)
           );
           
           if (remainingKeywords.length > 0) {
             currentSeedKeywords = remainingKeywords.slice(0, 3);
-            currentSeedKeywords.forEach(keyword => usedSeedKeywords.add(keyword));
+            console.log(`대체 시드키워드 설정: ${currentSeedKeywords.join(', ')}`);
+            // 이미 usedSeedKeywords에 포함되어 있으므로 추가로 add할 필요 없음
           } else {
             // 더 이상 수집할 키워드가 없음
+            console.log('더 이상 사용할 수 있는 시드키워드가 없습니다.');
             break;
           }
         }
