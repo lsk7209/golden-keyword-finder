@@ -41,9 +41,9 @@ export default function DataPage() {
   const [pageSize] = useState(100);
   const [totalCount, setTotalCount] = useState(0);
   
-  // 정렬 상태
-  const [sortField, setSortField] = useState<string>('created_at');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  // 정렬 상태 - 기본값: 카페문서수 오름차순
+  const [sortField, setSortField] = useState<string>('cafe_count');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   const fetchKeywords = useCallback(async (page = currentPage, size = pageSize) => {
     setLoading(true);
@@ -101,9 +101,20 @@ export default function DataPage() {
         query = query.lte('news_count', filters.newsCountMax);
       }
 
-      // 서버사이드 정렬 적용
-      const { data, error, count } = await query
-        .order(sortField, { ascending: sortDirection === 'asc' })
+      // 서버사이드 다중 정렬 적용
+      let orderQuery = query;
+      
+      if (sortField === 'cafe_count') {
+        // 카페문서수 오름차순(1순위) + 총검색수 내림차순(2순위)
+        orderQuery = orderQuery
+          .order('cafe_count', { ascending: true })
+          .order('monthly_pc_qc_cnt', { ascending: false });
+      } else {
+        // 다른 필드 정렬 시 기본 정렬
+        orderQuery = orderQuery.order(sortField, { ascending: sortDirection === 'asc' });
+      }
+      
+      const { data, error, count } = await orderQuery
         .range(offset, offset + size - 1);
 
       if (error) {
@@ -180,10 +191,15 @@ export default function DataPage() {
 
   const handleSort = useCallback((field: string) => {
     if (sortField === field) {
+      // 카페문서수는 항상 오름차순으로 고정 (다중 정렬 때문)
+      if (field === 'cafe_count') {
+        return; // 카페문서수는 정렬 방향 변경 불가
+      }
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
       setSortField(field);
-      setSortDirection('desc'); // 기본값은 내림차순
+      // 카페문서수는 항상 오름차순, 나머지는 내림차순
+      setSortDirection(field === 'cafe_count' ? 'asc' : 'desc');
     }
     setCurrentPage(1); // 정렬 변경 시 첫 페이지로 이동
   }, [sortField, sortDirection]);

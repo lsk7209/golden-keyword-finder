@@ -89,9 +89,11 @@ export const SimpleKeywordTable = memo(function SimpleKeywordTable({
                 onClick={() => handleSort('monthly_pc_qc_cnt')}
               >
                 총 검색수
-                {serverSortField === 'monthly_pc_qc_cnt' && (
+                {serverSortField === 'cafe_count' ? (
+                  <span className="ml-1">↓ (2순위)</span>
+                ) : serverSortField === 'monthly_pc_qc_cnt' ? (
                   <span className="ml-1">{serverSortDirection === 'asc' ? '↑' : '↓'}</span>
-                )}
+                ) : null}
               </th>
               <th 
                 className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
@@ -99,7 +101,7 @@ export const SimpleKeywordTable = memo(function SimpleKeywordTable({
               >
                 카페문서수
                 {serverSortField === 'cafe_count' && (
-                  <span className="ml-1">{serverSortDirection === 'asc' ? '↑' : '↓'}</span>
+                  <span className="ml-1">↑ (1순위)</span>
                 )}
               </th>
               <th 
