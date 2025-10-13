@@ -16,24 +16,10 @@ interface FilterSidebarProps {
 export function FilterSidebar({ filters, onFiltersChange }: FilterSidebarProps) {
   const [localFilters, setLocalFilters] = useState(filters);
 
-  // 디바운싱된 필터 적용
-  const debouncedApplyFilters = useCallback(
-    (() => {
-      let timeoutId: NodeJS.Timeout;
-      return (newFilters: FilterOptions) => {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => {
-          onFiltersChange(newFilters);
-        }, 300); // 300ms 디바운싱
-      };
-    })(),
-    [onFiltersChange]
-  );
-
-  // 로컬 필터가 변경될 때마다 디바운싱된 적용
+  // 로컬 필터와 props 필터 동기화
   useEffect(() => {
-    debouncedApplyFilters(localFilters);
-  }, [localFilters, debouncedApplyFilters]);
+    setLocalFilters(filters);
+  }, [filters]);
 
   const handleApplyFilters = () => {
     onFiltersChange(localFilters);
