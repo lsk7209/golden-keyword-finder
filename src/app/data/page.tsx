@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useKeywordStore } from '@/store/keyword-store';
 import { Keyword, FilterOptions } from '@/types/keyword';
 import { supabase } from '@/lib/supabase/client';
@@ -8,10 +8,12 @@ import { SimpleKeywordTable } from '@/components/data/SimpleKeywordTable';
 import { FilterSidebar } from '@/components/data/FilterSidebar';
 import { BulkActions } from '@/components/data/BulkActions';
 import { Pagination } from '@/components/data/Pagination';
+import { AutoCollectSection } from '@/components/home/AutoCollectSection';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { formatNumber } from '@/lib/utils';
+import { ApiResponse, SearchKeywordsResponse } from '@/types/api';
 
 export default function DataPage() {
   const {
@@ -35,6 +37,23 @@ export default function DataPage() {
     avgGoldenScore: 0,
   });
   const [error, setError] = useState<string | null>(null);
+
+  // 자동 수집 관련 상태
+  const [isAutoCollecting, setIsAutoCollecting] = useState(false);
+  const [autoCollectTarget, setAutoCollectTarget] = useState(0);
+  const [autoCollectCurrent, setAutoCollectCurrent] = useState(0);
+  const [currentSeedKeywords, setCurrentSeedKeywords] = useState<string[]>([]);
+  const [collectedKeywords, setCollectedKeywords] = useState<string[]>([]);
+  const [autoCollectNotification, setAutoCollectNotification] = useState<{
+    show: boolean;
+    message: string;
+    type: 'success' | 'error' | 'info';
+  }>({
+    show: false,
+    message: '',
+    type: 'info',
+  });
+  const autoCollectIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
   // 페이지네이션 상태
   const [currentPage, setCurrentPage] = useState(1);
@@ -252,6 +271,179 @@ export default function DataPage() {
     }
     setCurrentPage(1); // 정렬 변경 시 첫 페이지로 이동
   }, [sortField, sortDirection]);
+
+  // 자동 수집 시작
+  const handleStartAutoCollect = async (targetCount: number) => {
+    if (keywords.length === 0) {
+      setAutoCollectNotification({
+        show: true,
+        message: '먼저 키워드를 수집해주세요.',
+        type: 'error',
+      });
+      setTimeout(() => {
+        setAutoCollectNotification(prev => ({ ...prev, show: false }));
+      }, 3000);
+      return;
+    }
+
+    setIsAutoCollecting(true);
+    setAutoCollectTarget(targetCount);
+    setAutoCollectCurrent(keywords.length);
+    setCollectedKeywords(keywords.map(k => k.keyword));
+    
+    // 첫 번째 시드키워드 설정 (기존 키워드에서 선택)
+    const firstSeedKeywords = keywords.slice(0, 3).map(k => k.keyword);
+    setCurrentSeedKeywords(firstSeedKeywords);
+
+    setAutoCollectNotification({
+      show: true,
+      message: `🤖 자동 수집을 시작합니다. 목표: ${targetCount}개`,
+      type: 'info',
+    });
+
+    // 자동 수집 시작
+    startAutoCollectLoop(firstSeedKeywords, targetCount);
+  };
+
+  // 자동 수집 중지
+  const handleStopAutoCollect = () => {
+    setIsAutoCollecting(false);
+    setAutoCollectTarget(0);
+    setCurrentSeedKeywords([]);
+    
+    if (autoCollectIntervalRef.current) {
+      clearTimeout(autoCollectIntervalRef.current);
+      autoCollectIntervalRef.current = null;
+    }
+
+    setAutoCollectNotification({
+      show: true,
+      message: `⏹️ 자동 수집이 중지되었습니다. 총 ${autoCollectCurrent}개 키워드 수집 완료`,
+      type: 'info',
+    });
+    setTimeout(() => {
+      setAutoCollectNotification(prev => ({ ...prev, show: false }));
+    }, 5000);
+  };
+
+  // 자동 수집 루프
+  const startAutoCollectLoop = async (seedKeywords: string[], targetCount: number) => {
+    if (!isAutoCollecting) {
+      return;
+    }
+    
+    if (autoCollectCurrent >= targetCount) {
+      handleStopAutoCollect();
+      setAutoCollectNotification({
+        show: true,
+        message: `✅ 자동 수집 완료: 목표 ${targetCount}개 달성!`,
+        type: 'success',
+      });
+      setTimeout(() => {
+        setAutoCollectNotification(prev => ({ ...prev, show: false }));
+      }, 5000);
+      return;
+    }
+
+    try {
+      // 현재 시드키워드로 검색
+      const response = await fetch('/api/keywords/search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          seedKeywords: seedKeywords,
+          showDetail: true,
+          autoFetchDocs: true,
+        }),
+      });
+
+      const result: ApiResponse<SearchKeywordsResponse> = await response.json();
+
+      if (result.success && result.data) {
+        const newKeywords = result.data.keywords;
+        const newKeywordNames = newKeywords.map(k => k.keyword);
+        
+        // 중복 제거하여 새로운 키워드만 추가
+        const allCollectedKeywords = [...collectedKeywords, ...keywords.map(k => k.keyword)];
+        const uniqueNewKeywords = newKeywordNames.filter(
+          keyword => !allCollectedKeywords.includes(keyword)
+        );
+
+        if (uniqueNewKeywords.length > 0) {
+          // 새로운 키워드만 필터링하여 추가
+          const uniqueNewKeywordObjects = newKeywords.filter(k => 
+            uniqueNewKeywords.includes(k.keyword)
+          ).map(k => ({
+            keyword: k.keyword,
+            monthlyPcQcCnt: k.monthlyPcQcCnt.toString(),
+            monthlyMobileQcCnt: k.monthlyMobileQcCnt.toString(),
+            monthlyAvePcClkCnt: k.monthlyAvePcClkCnt.toString(),
+            monthlyAveMobileClkCnt: k.monthlyAveMobileClkCnt.toString(),
+            monthlyAvePcCtr: k.monthlyAvePcCtr.toString(),
+            monthlyAveMobileCtr: k.monthlyAveMobileCtr.toString(),
+            plAvgDepth: k.plAvgDepth.toString(),
+            compIdx: k.compIdx,
+          }));
+
+          // 검색 결과에 새로운 키워드 추가
+          setKeywords(prev => [...prev, ...uniqueNewKeywordObjects]);
+          setCollectedKeywords(prev => [...prev, ...uniqueNewKeywords]);
+          setAutoCollectCurrent(prev => prev + uniqueNewKeywords.length);
+
+          // 다음 시드키워드 설정 (새로 수집된 키워드 중에서)
+          const nextSeedKeywords = uniqueNewKeywords.slice(0, 3);
+          setCurrentSeedKeywords(nextSeedKeywords);
+
+          setAutoCollectNotification({
+            show: true,
+            message: `📈 ${uniqueNewKeywords.length}개 새로운 키워드 수집 완료 (총 ${autoCollectCurrent + uniqueNewKeywords.length}개)`,
+            type: 'success',
+          });
+        } else {
+          // 새로운 키워드가 없으면 다른 시드키워드 시도
+          const allKeywords = collectedKeywords;
+          const remainingKeywords = allKeywords.filter(
+            keyword => !seedKeywords.includes(keyword)
+          );
+          
+          if (remainingKeywords.length > 0) {
+            const nextSeedKeywords = remainingKeywords.slice(0, 3);
+            setCurrentSeedKeywords(nextSeedKeywords);
+          } else {
+            // 더 이상 수집할 키워드가 없음
+            handleStopAutoCollect();
+            setAutoCollectNotification({
+              show: true,
+              message: '✅ 자동 수집 완료: 더 이상 수집할 키워드가 없습니다.',
+              type: 'success',
+            });
+            return;
+          }
+        }
+      }
+
+      // 3초 후 다음 수집 시도
+      autoCollectIntervalRef.current = setTimeout(() => {
+        if (isAutoCollecting && autoCollectCurrent < targetCount) {
+          const nextSeedKeywords = currentSeedKeywords.length > 0 
+            ? currentSeedKeywords 
+            : collectedKeywords.slice(0, 3);
+          startAutoCollectLoop(nextSeedKeywords, targetCount);
+        }
+      }, 3000);
+
+    } catch (error) {
+      console.error('자동 수집 오류:', error);
+      setAutoCollectNotification({
+        show: true,
+        message: '자동 수집 중 오류가 발생했습니다.',
+        type: 'error',
+      });
+      handleStopAutoCollect();
+    }
+  };
 
   useEffect(() => {
     fetchKeywords(currentPage, pageSize);
@@ -517,9 +709,9 @@ export default function DataPage() {
                 fetchStats();
               }}
               variant="outline"
-              disabled={isLoading}
+              disabled={isLoading || isAutoCollecting}
             >
-              {isLoading ? '새로고침 중...' : '🔄 새로고침'}
+              {isLoading ? '새로고침 중...' : isAutoCollecting ? '자동 수집 중...' : '🔄 새로고침'}
             </Button>
           </div>
         </div>
@@ -531,6 +723,60 @@ export default function DataPage() {
               filters={filters}
               onFiltersChange={handleFiltersChange}
             />
+          </div>
+        )}
+
+        {/* 자동 수집 섹션 */}
+        {keywords.length > 0 && (
+          <div className="mb-6">
+            <AutoCollectSection
+              onStartAutoCollect={handleStartAutoCollect}
+              onStopAutoCollect={handleStopAutoCollect}
+              isAutoCollecting={isAutoCollecting}
+              currentCount={autoCollectCurrent}
+              targetCount={autoCollectTarget}
+              currentSeedKeywords={currentSeedKeywords}
+              collectedKeywords={collectedKeywords}
+            />
+          </div>
+        )}
+
+        {/* 자동 수집 알림 */}
+        {autoCollectNotification.show && (
+          <div className="mb-6">
+            <div className={`p-4 rounded-lg border ${
+              autoCollectNotification.type === 'success' 
+                ? 'bg-green-50 border-green-200' 
+                : autoCollectNotification.type === 'error'
+                ? 'bg-red-50 border-red-200'
+                : 'bg-blue-50 border-blue-200'
+            }`}>
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <span className={`text-xl ${
+                    autoCollectNotification.type === 'success' 
+                      ? 'text-green-400' 
+                      : autoCollectNotification.type === 'error'
+                      ? 'text-red-400'
+                      : 'text-blue-400'
+                  }`}>
+                    {autoCollectNotification.type === 'success' ? '✅' : 
+                     autoCollectNotification.type === 'error' ? '❌' : 'ℹ️'}
+                  </span>
+                </div>
+                <div className="ml-3">
+                  <p className={`text-sm font-medium ${
+                    autoCollectNotification.type === 'success' 
+                      ? 'text-green-800' 
+                      : autoCollectNotification.type === 'error'
+                      ? 'text-red-800'
+                      : 'text-blue-800'
+                  }`}>
+                    {autoCollectNotification.message}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -580,6 +826,13 @@ export default function DataPage() {
               sortField={sortField}
               sortDirection={sortDirection}
             />
+            {isAutoCollecting && (
+              <div className="p-4 bg-blue-50 border-t border-blue-200">
+                <p className="text-sm text-blue-700 text-center">
+                  🤖 자동 수집 진행 중... 새로운 키워드가 자동으로 추가됩니다
+                </p>
+              </div>
+            )}
             <Pagination
               currentPage={currentPage}
               totalPages={Math.ceil(totalCount / pageSize)}
