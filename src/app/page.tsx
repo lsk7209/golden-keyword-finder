@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { SearchSection } from '@/components/home/SearchSection';
 import { KeywordTable } from '@/components/home/KeywordTable';
 import { SearchOptions, NaverKeyword } from '@/types/keyword';

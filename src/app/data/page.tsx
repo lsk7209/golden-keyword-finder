@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useKeywordStore } from '@/store/keyword-store';
-import { Keyword } from '@/types/keyword';
+import { Keyword, FilterOptions } from '@/types/keyword';
 import { supabase } from '@/lib/supabase/client';
 import { SimpleKeywordTable } from '@/components/data/SimpleKeywordTable';
 import { FilterSidebar } from '@/components/data/FilterSidebar';
@@ -149,7 +149,7 @@ export default function DataPage() {
     } finally {
       setLoading(false);
     }
-  }, [setKeywords, setLoading, filters]); // 필터 의존성 추가
+  }, [setKeywords, setLoading, filters, currentPage, pageSize]); // 모든 의존성 추가
 
   const fetchStats = useCallback(async () => {
     try {
