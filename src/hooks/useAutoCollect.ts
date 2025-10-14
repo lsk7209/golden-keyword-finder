@@ -55,7 +55,7 @@ export function useAutoCollect() {
     
     // 초기화
     allCollectedKeywords.current = new Set(seedKeywords);
-    usedAsSeedKeywords.current = new Set();
+    usedAsSeedKeywords.current = new Set(seedKeywords); // 초기 시드키워드들을 사용된 것으로 표시
     
     setState({
       isRunning: true,
@@ -83,8 +83,9 @@ export function useAutoCollect() {
           return;
         }
 
-        // 시드키워드 선택 (최대 3개)
-        const selectedSeeds = availableForSeed.slice(0, 3);
+        // 시드키워드 선택 (최대 3개) - 랜덤하게 선택하여 다양성 확보
+        const shuffled = [...availableForSeed].sort(() => Math.random() - 0.5);
+        const selectedSeeds = shuffled.slice(0, 3);
         addLog(`🌱 선택된 시드키워드: ${selectedSeeds.join(', ')}`);
 
         // 선택된 키워드를 사용된 키워드에 추가
@@ -96,8 +97,9 @@ export function useAutoCollect() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
-            keywords: selectedSeeds,
-            collectDocuments: true 
+            seedKeywords: selectedSeeds,
+            showDetail: true,
+            autoFetchDocs: true 
           }),
         });
 
