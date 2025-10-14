@@ -149,7 +149,6 @@ async function startAutoCollection(sessionId: string, initialSeedKeywords: strin
         updated_at: new Date().toISOString(),
       }));
 
-      // @ts-expect-error - Supabase 타입 정의 문제로 임시 처리
       const { error: insertError } = await supabase
         .from('keywords')
         .insert(keywordObjects);
