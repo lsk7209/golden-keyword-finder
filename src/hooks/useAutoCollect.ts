@@ -67,6 +67,7 @@ export function useAutoCollect() {
         usedAsSeedKeywords.current = new Set(seedKeywords); // 초기 시드키워드들만 사용된 것으로 표시
         
         addLog(`📊 기존 키워드 ${existingKeywordSet.size}개 로드됨`);
+        addLog(`🌱 사용 가능한 시드키워드: ${existingKeywordSet.size}개 (기존) + ${seedKeywords.length}개 (초기) = ${allCollectedKeywords.current.size}개`);
       } else {
         // 실패시 초기 시드키워드만 사용
         allCollectedKeywords.current = new Set(seedKeywords);
@@ -100,8 +101,11 @@ export function useAutoCollect() {
           keyword => !usedAsSeedKeywords.current.has(keyword)
         );
 
+        addLog(`🔍 전체 키워드: ${allCollectedKeywords.current.size}개, 사용된 시드: ${usedAsSeedKeywords.current.size}개, 사용 가능: ${availableForSeed.length}개`);
+
         if (availableForSeed.length === 0) {
           addLog('❌ 더 이상 사용할 수 있는 시드키워드가 없습니다.');
+          addLog(`📊 디버그 정보: 전체=${allCollectedKeywords.current.size}, 사용됨=${usedAsSeedKeywords.current.size}`);
           stopAutoCollect();
           return;
         }
