@@ -8,6 +8,7 @@ import { SimpleKeywordTable } from '@/components/data/SimpleKeywordTable';
 import { FilterSidebar } from '@/components/data/FilterSidebar';
 import { BulkActions } from '@/components/data/BulkActions';
 import { Pagination } from '@/components/data/Pagination';
+import { SimpleAutoCollect } from '@/components/home/SimpleAutoCollect';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -36,6 +37,8 @@ export default function DataPage() {
   });
   const [error, setError] = useState<string | null>(null);
 
+  // 자동 수집을 위한 시드키워드 상태
+  const [seedKeywords, setSeedKeywords] = useState<string[]>([]);
   
   // 페이지네이션 상태
   const [currentPage, setCurrentPage] = useState(1);
@@ -203,6 +206,12 @@ export default function DataPage() {
         setKeywords(paginatedKeywords as Keyword[]);
         setTotalCount(sortedKeywords.length); // 필터링된 전체 개수
         setLastUpdateTime(new Date());
+        
+        // 자동 수집을 위한 시드키워드 설정 (상위 3개)
+        if (paginatedKeywords.length > 0) {
+          setSeedKeywords(paginatedKeywords.slice(0, 3).map(k => k.keyword));
+        }
+        
         console.log(`키워드 조회 완료: ${paginatedKeywords.length}개 (필터링된 총 ${sortedKeywords.length}개, 전체 ${allKeywords.length}개)`);
       } else {
         console.log('데이터가 없습니다.');
@@ -549,6 +558,13 @@ export default function DataPage() {
               onClearSelection={clearSelection}
               onBulkFetchDocs={handleBulkFetchDocs}
             />
+          </div>
+        )}
+
+        {/* 자동 수집 섹션 */}
+        {keywords.length > 0 && seedKeywords.length > 0 && (
+          <div className="mb-6">
+            <SimpleAutoCollect seedKeywords={seedKeywords} />
           </div>
         )}
 
