@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useKeywordStore } from '@/store/keyword-store';
 import { Keyword, FilterOptions } from '@/types/keyword';
 import { supabase } from '@/lib/supabase/client';
@@ -539,44 +539,6 @@ export default function DataPage() {
         )}
 
 
-        {/* 자동 수집 알림 */}
-        {autoCollectNotification.show && (
-          <div className="mb-6">
-            <div className={`p-4 rounded-lg border ${
-              autoCollectNotification.type === 'success' 
-                ? 'bg-green-50 border-green-200' 
-                : autoCollectNotification.type === 'error'
-                ? 'bg-red-50 border-red-200'
-                : 'bg-blue-50 border-blue-200'
-            }`}>
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <span className={`text-xl ${
-                    autoCollectNotification.type === 'success' 
-                      ? 'text-green-400' 
-                      : autoCollectNotification.type === 'error'
-                      ? 'text-red-400'
-                      : 'text-blue-400'
-                  }`}>
-                    {autoCollectNotification.type === 'success' ? '✅' : 
-                     autoCollectNotification.type === 'error' ? '❌' : 'ℹ️'}
-                  </span>
-                </div>
-                <div className="ml-3">
-                  <p className={`text-sm font-medium ${
-                    autoCollectNotification.type === 'success' 
-                      ? 'text-green-800' 
-                      : autoCollectNotification.type === 'error'
-                      ? 'text-red-800'
-                      : 'text-blue-800'
-                  }`}>
-                    {autoCollectNotification.message}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* 벌크 액션 */}
         {selectedIds.length > 0 && (
