@@ -17,13 +17,13 @@ export async function POST(request: NextRequest) {
     keywordData = await request.json();
     
     console.log('키워드 저장 요청:', {
-      keyword: keywordData.keyword,
-      monthlyPcQcCnt: keywordData.monthlyPcQcCnt,
-      monthlyMobileQcCnt: keywordData.monthlyMobileQcCnt,
-      compIdx: keywordData.compIdx
+      keyword: keywordData?.keyword,
+      monthlyPcQcCnt: keywordData?.monthlyPcQcCnt,
+      monthlyMobileQcCnt: keywordData?.monthlyMobileQcCnt,
+      compIdx: keywordData?.compIdx
     });
 
-    if (!keywordData.keyword) {
+    if (!keywordData?.keyword) {
       return NextResponse.json(
         { success: false, error: '키워드가 필요합니다.' },
         { status: 400 }
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     const { data: existing, error: checkError } = await supabase
       .from('keywords')
       .select('id')
-      .eq('keyword', keywordData.keyword)
+      .eq('keyword', keywordData!.keyword)
       .single();
     
     if (checkError && checkError.code !== 'PGRST116') {
@@ -57,11 +57,11 @@ export async function POST(request: NextRequest) {
     };
 
     try {
-      console.log(`문서수 자동 수집 시작: ${keywordData.keyword}`);
+      console.log(`문서수 자동 수집 시작: ${keywordData!.keyword}`);
       // API 사용량 모니터링 (4개 서비스 호출)
       NaverApiUsageMonitor.incrementUsage(4);
       
-      documentCounts = await getDocumentCounts(keywordData.keyword);
+      documentCounts = await getDocumentCounts(keywordData!.keyword);
       console.log(`문서수 수집 완료:`, documentCounts);
     } catch (docError) {
       console.error('문서수 수집 실패:', docError);
@@ -74,14 +74,14 @@ export async function POST(request: NextRequest) {
         .from('keywords')
         // @ts-expect-error - Supabase 타입 정의 문제로 인한 임시 해결
         .update({
-          monthly_pc_qc_cnt: parseNaverNumber(keywordData.monthlyPcQcCnt),
-          monthly_mobile_qc_cnt: parseNaverNumber(keywordData.monthlyMobileQcCnt),
-          monthly_ave_pc_clk_cnt: parseFloat(keywordData.monthlyAvePcClkCnt) || 0,
-          monthly_ave_mobile_clk_cnt: parseFloat(keywordData.monthlyAveMobileClkCnt) || 0,
-          monthly_ave_pc_ctr: parseFloat(keywordData.monthlyAvePcCtr) || 0,
-          monthly_ave_mobile_ctr: parseFloat(keywordData.monthlyAveMobileCtr) || 0,
-          pl_avg_depth: parseNaverNumber(keywordData.plAvgDepth),
-          comp_idx: keywordData.compIdx as '낮음' | '중간' | '높음',
+          monthly_pc_qc_cnt: parseNaverNumber(keywordData!.monthlyPcQcCnt),
+          monthly_mobile_qc_cnt: parseNaverNumber(keywordData!.monthlyMobileQcCnt),
+          monthly_ave_pc_clk_cnt: parseFloat(keywordData!.monthlyAvePcClkCnt) || 0,
+          monthly_ave_mobile_clk_cnt: parseFloat(keywordData!.monthlyAveMobileClkCnt) || 0,
+          monthly_ave_pc_ctr: parseFloat(keywordData!.monthlyAvePcCtr) || 0,
+          monthly_ave_mobile_ctr: parseFloat(keywordData!.monthlyAveMobileCtr) || 0,
+          pl_avg_depth: parseNaverNumber(keywordData!.plAvgDepth),
+          comp_idx: keywordData!.compIdx as '낮음' | '중간' | '높음',
           blog_count: documentCounts.blogCount,
           cafe_count: documentCounts.cafeCount,
           web_count: documentCounts.webCount,
@@ -118,15 +118,15 @@ export async function POST(request: NextRequest) {
         .from('keywords')
         // @ts-expect-error - Supabase 타입 정의 문제로 인한 임시 해결
         .insert({
-          keyword: keywordData.keyword,
-          monthly_pc_qc_cnt: parseNaverNumber(keywordData.monthlyPcQcCnt),
-          monthly_mobile_qc_cnt: parseNaverNumber(keywordData.monthlyMobileQcCnt),
-          monthly_ave_pc_clk_cnt: parseFloat(keywordData.monthlyAvePcClkCnt) || 0,
-          monthly_ave_mobile_clk_cnt: parseFloat(keywordData.monthlyAveMobileClkCnt) || 0,
-          monthly_ave_pc_ctr: parseFloat(keywordData.monthlyAvePcCtr) || 0,
-          monthly_ave_mobile_ctr: parseFloat(keywordData.monthlyAveMobileCtr) || 0,
-          pl_avg_depth: parseNaverNumber(keywordData.plAvgDepth),
-          comp_idx: keywordData.compIdx as '낮음' | '중간' | '높음',
+          keyword: keywordData!.keyword,
+          monthly_pc_qc_cnt: parseNaverNumber(keywordData!.monthlyPcQcCnt),
+          monthly_mobile_qc_cnt: parseNaverNumber(keywordData!.monthlyMobileQcCnt),
+          monthly_ave_pc_clk_cnt: parseFloat(keywordData!.monthlyAvePcClkCnt) || 0,
+          monthly_ave_mobile_clk_cnt: parseFloat(keywordData!.monthlyAveMobileClkCnt) || 0,
+          monthly_ave_pc_ctr: parseFloat(keywordData!.monthlyAvePcCtr) || 0,
+          monthly_ave_mobile_ctr: parseFloat(keywordData!.monthlyAveMobileCtr) || 0,
+          pl_avg_depth: parseNaverNumber(keywordData!.plAvgDepth),
+          comp_idx: keywordData!.compIdx as '낮음' | '중간' | '높음',
           blog_count: documentCounts.blogCount,
           cafe_count: documentCounts.cafeCount,
           web_count: documentCounts.webCount,
