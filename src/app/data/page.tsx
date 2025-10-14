@@ -568,23 +568,6 @@ export default function DataPage() {
           </div>
         )}
 
-        {/* 디버깅 정보 */}
-        <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-          <h3 className="text-sm font-medium text-gray-700 mb-2">디버깅 정보</h3>
-          <div className="text-xs text-gray-600 space-y-1">
-            <p>전체 키워드: {keywords.length}개</p>
-            <p>필터링된 키워드: {filteredKeywords.length}개</p>
-            <p>로딩 상태: {isLoading ? '로딩 중' : '완료'}</p>
-            <p>클라이언트사이드 필터링 + 정렬 + 페이지네이션 사용 중</p>
-            {keywords.length > 0 && (
-              <div>
-                <p>첫 번째 키워드: {keywords[0].keyword}</p>
-                <p>검색량: {keywords[0].totalSearchVolume || 0}</p>
-                <p>경쟁도: {keywords[0].compIdx || '중간'}</p>
-              </div>
-            )}
-          </div>
-        </div>
 
         {/* 키워드 테이블 */}
         <Card>
