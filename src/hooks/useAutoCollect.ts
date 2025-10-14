@@ -60,7 +60,7 @@ export function useAutoCollect() {
       if (response.ok) {
         const data = await response.json();
         const existingKeywords = data.keywords || [];
-        const existingKeywordSet = new Set(existingKeywords.map((k: any) => k.keyword));
+        const existingKeywordSet = new Set(existingKeywords.map((k: { keyword: string }) => k.keyword));
         
         // 기존 키워드들과 초기 시드키워드들을 합치기
         allCollectedKeywords.current = new Set([...existingKeywordSet, ...seedKeywords]);
@@ -73,7 +73,7 @@ export function useAutoCollect() {
         usedAsSeedKeywords.current = new Set(seedKeywords);
         addLog('⚠️ 기존 키워드 로드 실패, 초기 시드키워드만 사용');
       }
-    } catch (error) {
+    } catch {
       // 에러시 초기 시드키워드만 사용
       allCollectedKeywords.current = new Set(seedKeywords);
       usedAsSeedKeywords.current = new Set(seedKeywords);
