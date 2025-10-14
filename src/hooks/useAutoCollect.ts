@@ -32,6 +32,22 @@ export function useAutoCollect() {
     }));
   }, []);
 
+  const stopAutoCollect = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+
+    setState(prev => ({
+      ...prev,
+      isRunning: false,
+      message: '자동 수집이 중지되었습니다.',
+    }));
+
+    addLog('⏹️ 자동 수집 중지됨');
+    console.log('🛑 클라이언트 자동 수집 중지');
+  }, [addLog]);
+
   const startAutoCollect = useCallback(async (seedKeywords: string[], targetCount: number) => {
     if (state.isRunning) return;
 
@@ -163,22 +179,6 @@ export function useAutoCollect() {
     }, 5000);
 
   }, [state.isRunning, addLog, stopAutoCollect]);
-
-  const stopAutoCollect = useCallback(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-
-    setState(prev => ({
-      ...prev,
-      isRunning: false,
-      message: '자동 수집이 중지되었습니다.',
-    }));
-
-    addLog('⏹️ 자동 수집 중지됨');
-    console.log('🛑 클라이언트 자동 수집 중지');
-  }, [addLog]);
 
   return {
     ...state,
