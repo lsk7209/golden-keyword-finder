@@ -53,9 +53,32 @@ export function useAutoCollect() {
 
     console.log('🚀 클라이언트 자동 수집 시작');
     
-    // 초기화
-    allCollectedKeywords.current = new Set(seedKeywords);
-    usedAsSeedKeywords.current = new Set(seedKeywords); // 초기 시드키워드들을 사용된 것으로 표시
+    // 기존 키워드들을 데이터베이스에서 가져오기
+    addLog('📊 기존 키워드 데이터 로딩 중...');
+    try {
+      const response = await fetch('/api/keywords/stats');
+      if (response.ok) {
+        const data = await response.json();
+        const existingKeywords = data.keywords || [];
+        const existingKeywordSet = new Set(existingKeywords.map((k: any) => k.keyword));
+        
+        // 기존 키워드들과 초기 시드키워드들을 합치기
+        allCollectedKeywords.current = new Set([...existingKeywordSet, ...seedKeywords]);
+        usedAsSeedKeywords.current = new Set(seedKeywords); // 초기 시드키워드들만 사용된 것으로 표시
+        
+        addLog(`📊 기존 키워드 ${existingKeywordSet.size}개 로드됨`);
+      } else {
+        // 실패시 초기 시드키워드만 사용
+        allCollectedKeywords.current = new Set(seedKeywords);
+        usedAsSeedKeywords.current = new Set(seedKeywords);
+        addLog('⚠️ 기존 키워드 로드 실패, 초기 시드키워드만 사용');
+      }
+    } catch (error) {
+      // 에러시 초기 시드키워드만 사용
+      allCollectedKeywords.current = new Set(seedKeywords);
+      usedAsSeedKeywords.current = new Set(seedKeywords);
+      addLog('⚠️ 기존 키워드 로드 중 오류, 초기 시드키워드만 사용');
+    }
     
     setState({
       isRunning: true,

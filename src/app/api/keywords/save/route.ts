@@ -160,11 +160,17 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('키워드 저장 오류:', error);
+    console.error('오류 상세:', {
+      message: error instanceof Error ? error.message : '알 수 없는 오류',
+      stack: error instanceof Error ? error.stack : undefined,
+      keyword: keywordData?.keyword || 'unknown'
+    });
     
     return NextResponse.json(
       { 
         success: false, 
-        error: error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.' 
+        error: error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.',
+        details: error instanceof Error ? error.stack : undefined
       },
       { status: 500 }
     );
