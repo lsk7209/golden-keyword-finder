@@ -71,7 +71,7 @@ async function startNewAutoCollection(sessionId: string, initialSeedKeywords: st
   const supabase = await createClient();
   
   // 데이터베이스에서 기존 키워드들 가져오기
-  const { data: existingKeywords, error: fetchError } = await supabase
+  const { data: existingKeywords, error: fetchError } = await (supabase as any)
     .from('keywords')
     .select('keyword');
   
@@ -84,8 +84,8 @@ async function startNewAutoCollection(sessionId: string, initialSeedKeywords: st
   const usedAsSeedKeywords = new Set<string>(); // 시드로 사용된 키워드 (초기에는 비어있음)
   
   // 기존 키워드들을 allCollectedKeywords에 추가
-  if (existingKeywords) {
-    existingKeywords.forEach(k => allCollectedKeywords.add(k.keyword));
+  if (existingKeywords && Array.isArray(existingKeywords)) {
+    existingKeywords.forEach((k: any) => allCollectedKeywords.add(k.keyword));
   }
   
   let currentCount = allCollectedKeywords.size; // 현재 수집된 키워드 수
