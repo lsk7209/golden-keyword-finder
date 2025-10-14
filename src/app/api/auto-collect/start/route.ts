@@ -93,8 +93,13 @@ async function startNewAutoCollection(sessionId: string, initialSeedKeywords: st
   let iterationCount = 0; // 반복 횟수
   
   console.log(`🎯 자동 수집 시작 - 목표: ${targetCount}개, 기존 키워드: ${allCollectedKeywords.size}개, 초기 시드키워드: ${initialSeedKeywords.length}개`);
+  console.log(`📋 초기 allCollectedKeywords:`, Array.from(allCollectedKeywords).slice(0, 10));
+  console.log(`📋 초기 usedAsSeedKeywords:`, Array.from(usedAsSeedKeywords));
 
   try {
+    console.log(`🔍 while 루프 조건 체크: currentCount(${currentCount}) < targetCount(${targetCount}) = ${currentCount < targetCount}`);
+    console.log(`🔍 while 루프 조건 체크: iterationCount(${iterationCount}) < 10000 = ${iterationCount < 10000}`);
+    
     while (currentCount < targetCount && iterationCount < 10000) { // 최대 10,000회 반복 (대규모 수집 지원)
       iterationCount++;
       console.log(`\n🔄 반복 ${iterationCount}회 시작 - 현재 수집: ${currentCount}개`);
