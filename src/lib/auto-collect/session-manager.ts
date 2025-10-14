@@ -24,6 +24,7 @@ export async function updateSessionState(sessionId: string, updates: Partial<Ses
       updated_at: new Date().toISOString(),
     };
 
+    // @ts-expect-error - Supabase 타입 정의 문제로 임시 처리
     const { error } = await supabase
       .from('auto_collect_sessions')
       .update(updateData)
@@ -46,6 +47,7 @@ export async function getSessionState(sessionId: string): Promise<SessionState |
   try {
     const supabase = await createClient();
     
+    // @ts-expect-error - Supabase 타입 정의 문제로 임시 처리
     const { data, error } = await supabase
       .from('auto_collect_sessions')
       .select('*')
@@ -87,6 +89,7 @@ export async function createSession(sessionId: string, initialData: Partial<Sess
       ...initialData,
     };
 
+    // @ts-expect-error - Supabase 타입 정의 문제로 임시 처리
     const { error } = await supabase
       .from('auto_collect_sessions')
       .insert(sessionData);
@@ -109,6 +112,7 @@ export async function deleteSession(sessionId: string) {
   try {
     const supabase = await createClient();
     
+    // @ts-expect-error - Supabase 타입 정의 문제로 임시 처리
     const { error } = await supabase
       .from('auto_collect_sessions')
       .delete()
