@@ -5,6 +5,8 @@ import { parseNaverNumber } from '@/lib/naver/keywords';
 import { getDocumentCounts, NaverApiUsageMonitor } from '@/lib/naver/documents';
 
 export async function POST(request: NextRequest) {
+  let keywordData: NaverKeyword | null = null;
+  
   try {
     // 환경변수 확인
     console.log('환경변수 확인:', {
@@ -12,7 +14,7 @@ export async function POST(request: NextRequest) {
       SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '설정됨' : '미설정',
     });
 
-    const keywordData: NaverKeyword = await request.json();
+    keywordData = await request.json();
     
     console.log('키워드 저장 요청:', {
       keyword: keywordData.keyword,
