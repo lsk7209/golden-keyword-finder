@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     console.log(`📊 상태 확인 요청: ${sessionId}`);
 
     // 세션 상태 가져오기
-    const sessionState = await getSessionState(sessionId);
+    const sessionState = getSessionState(sessionId);
     
     if (!sessionState) {
       console.log(`❌ 세션을 찾을 수 없음: ${sessionId}`);
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
 
     // 데이터베이스에서 실제 키워드 수 확인
     const supabase = await createClient();
-    const { count, error } = await supabase
+    const { count, error } = await (supabase as any)
       .from('keywords')
       .select('*', { count: 'exact', head: true });
 
@@ -67,4 +67,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-

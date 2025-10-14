@@ -1,7 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { updateSessionState, getSessionState, createSession } from '@/lib/auto-collect/session-manager';
+import { createSession, updateSessionState } from '@/lib/auto-collect/session-manager';
 
 export const maxDuration = 300; // 5분으로 설정
 
@@ -22,27 +21,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('Supabase 클라이언트 생성 중...');
-    await createClient();
-    console.log('Supabase 클라이언트 생성 완료');
-
     // 세션 ID 생성
     const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
-    // 데이터베이스에 세션 생성
+    // 세션 생성
     await createSession(sessionId, {
       status: 'running',
       target_count: targetCount,
       current_count: seedKeywords.length,
       current_seed_keywords: seedKeywords,
-      used_seed_keywords: seedKeywords,
+      used_seed_keywords: [],
       message: '자동 수집이 시작되었습니다.',
       logs: [`🚀 자동 수집 시작 - 목표: ${targetCount}개, 초기 시드키워드: ${seedKeywords.join(', ')}`],
     });
     
     // 백그라운드에서 자동 수집 시작 (비동기)
     console.log('백그라운드 자동 수집 시작:', sessionId);
-    startNewAutoCollection(sessionId, seedKeywords, targetCount).catch(error => {
+    startAutoCollection(sessionId, seedKeywords, targetCount).catch(error => {
       console.error('백그라운드 자동 수집 오류:', error);
       updateSessionState(sessionId, {
         status: 'error',
@@ -54,7 +49,7 @@ export async function POST(request: NextRequest) {
       success: true,
       data: {
         sessionId: sessionId,
-        message: '새로운 자동 수집이 백그라운드에서 시작되었습니다.',
+        message: '자동 수집이 백그라운드에서 시작되었습니다.',
       },
     });
 
@@ -68,80 +63,40 @@ export async function POST(request: NextRequest) {
 }
 
 // 새로운 자동 수집 함수
-async function startNewAutoCollection(sessionId: string, initialSeedKeywords: string[], targetCount: number) {
+async function startAutoCollection(sessionId: string, initialSeedKeywords: string[], targetCount: number) {
   const supabase = await createClient();
   
-  // 데이터베이스에서 기존 키워드들 가져오기
-  const { data: existingKeywords, error: fetchError } = await (supabase as any)
-    .from('keywords')
-    .select('keyword');
-  
-  if (fetchError) {
-    console.error('기존 키워드 조회 오류:', fetchError);
-  }
-  
   // 상태 관리
-  const allCollectedKeywords = new Set<string>(initialSeedKeywords); // 수집된 모든 키워드
-  const usedAsSeedKeywords = new Set<string>(); // 시드로 사용된 키워드 (초기에는 비어있음)
+  const allCollectedKeywords = new Set<string>(initialSeedKeywords);
+  const usedAsSeedKeywords = new Set<string>();
+  let currentCount = initialSeedKeywords.length;
+  let iterationCount = 0;
   
-  // 기존 키워드들을 allCollectedKeywords에 추가
-  if (existingKeywords && Array.isArray(existingKeywords)) {
-    existingKeywords.forEach((k: any) => allCollectedKeywords.add(k.keyword));
-  }
-  
-  let currentCount = allCollectedKeywords.size; // 현재 수집된 키워드 수
-  let iterationCount = 0; // 반복 횟수
-  
-  console.log(`🎯 자동 수집 시작 - 목표: ${targetCount}개, 기존 키워드: ${allCollectedKeywords.size}개, 초기 시드키워드: ${initialSeedKeywords.length}개`);
-  console.log(`📋 초기 allCollectedKeywords:`, Array.from(allCollectedKeywords).slice(0, 10));
-  console.log(`📋 초기 usedAsSeedKeywords:`, Array.from(usedAsSeedKeywords));
+  console.log(`🎯 자동 수집 시작 - 목표: ${targetCount}개, 초기 키워드: ${initialSeedKeywords.length}개`);
 
   try {
-    console.log(`🔍 while 루프 조건 체크: currentCount(${currentCount}) < targetCount(${targetCount}) = ${currentCount < targetCount}`);
-    console.log(`🔍 while 루프 조건 체크: iterationCount(${iterationCount}) < 10000 = ${iterationCount < 10000}`);
-    
-    while (currentCount < targetCount && iterationCount < 10000) { // 최대 10,000회 반복 (대규모 수집 지원)
+    while (currentCount < targetCount && iterationCount < 100) {
       iterationCount++;
       console.log(`\n🔄 반복 ${iterationCount}회 시작 - 현재 수집: ${currentCount}개`);
       
-      // 세션 상태 업데이트
-      const currentSessionState = await getSessionState(sessionId);
-      await updateSessionState(sessionId, {
-        status: 'running',
-        current_count: currentCount,
-        current_seed_keywords: Array.from(allCollectedKeywords).filter(k => !usedAsSeedKeywords.has(k)).slice(0, 3),
-        used_seed_keywords: Array.from(usedAsSeedKeywords),
-        message: `반복 ${iterationCount}회 진행 중 - 현재 수집: ${currentCount}개`,
-        logs: [
-          ...(currentSessionState?.logs || []),
-          `🔄 반복 ${iterationCount}회 시작 - 현재 수집: ${currentCount}개`
-        ].slice(-10), // 최근 10개 로그만 유지
-      });
-      
-      // 사용되지 않은 키워드 중에서 시드키워드 선택
+      // 사용 가능한 시드키워드 선택
       const availableForSeed = Array.from(allCollectedKeywords).filter(
         keyword => !usedAsSeedKeywords.has(keyword)
       );
       
-      console.log(`📋 전체 수집된 키워드: ${allCollectedKeywords.size}개`);
-      console.log(`📋 사용된 시드키워드: ${usedAsSeedKeywords.size}개`);
       console.log(`📋 사용 가능한 시드키워드: ${availableForSeed.length}개`);
       
       if (availableForSeed.length === 0) {
         console.log('❌ 더 이상 사용할 수 있는 시드키워드가 없습니다.');
-        console.log('📊 사용된 시드키워드 목록:', Array.from(usedAsSeedKeywords).slice(0, 10));
         break;
       }
       
       // 시드키워드 선택 (최대 3개)
       const selectedSeeds = availableForSeed.slice(0, 3);
       console.log(`🌱 선택된 시드키워드: ${selectedSeeds.join(', ')}`);
-      console.log(`🌱 선택 전 사용된 시드키워드 수: ${usedAsSeedKeywords.size}개`);
       
       // 선택된 키워드를 사용된 키워드에 추가
       selectedSeeds.forEach(keyword => usedAsSeedKeywords.add(keyword));
-      
-      console.log(`🌱 선택 후 사용된 시드키워드 수: ${usedAsSeedKeywords.size}개`);
       
       // 네이버 API로 연관키워드 검색
       console.log('🔍 네이버 API 호출 시작...');
@@ -154,26 +109,10 @@ async function startNewAutoCollection(sessionId: string, initialSeedKeywords: st
         
         if (!relatedKeywords || relatedKeywords.length === 0) {
           console.log('⚠️ 연관키워드 검색 결과가 없습니다.');
-        const sessionStateForNoResults = await getSessionState(sessionId);
-        await updateSessionState(sessionId, {
-          message: `연관키워드 검색 결과 없음 - 시드키워드: ${selectedSeeds.join(', ')}`,
-          logs: [
-            ...(sessionStateForNoResults?.logs || []),
-            `⚠️ 연관키워드 검색 결과 없음 - 시드키워드: ${selectedSeeds.join(', ')}`
-          ].slice(-10),
-        });
           continue;
         }
       } catch (apiError) {
         console.error('❌ 네이버 API 오류:', apiError);
-        const sessionStateForError = await getSessionState(sessionId);
-        await updateSessionState(sessionId, {
-          message: `네이버 API 오류: ${apiError instanceof Error ? apiError.message : String(apiError)}`,
-          logs: [
-            ...(sessionStateForError?.logs || []),
-            `❌ 네이버 API 오류: ${apiError instanceof Error ? apiError.message : String(apiError)}`
-          ].slice(-10),
-        });
         continue;
       }
       
@@ -183,15 +122,15 @@ async function startNewAutoCollection(sessionId: string, initialSeedKeywords: st
       const newKeywords = relatedKeywords.filter(
         keyword => !allCollectedKeywords.has(keyword.keyword)
       );
-      
-      console.log(`✨ 새로운 키워드: ${newKeywords.length}개`);
-      
+
       if (newKeywords.length === 0) {
         console.log('⚠️ 새로운 키워드가 없습니다.');
         continue;
       }
-      
-      // 데이터베이스에 저장할 키워드 객체 생성
+
+      console.log(`✨ 새로운 키워드: ${newKeywords.length}개`);
+
+      // 새로운 키워드를 데이터베이스에 저장
       const keywordObjects = newKeywords.map(k => ({
         keyword: k.keyword,
         monthly_pc_qc_cnt: parseInt(k.monthlyPcQcCnt.toString()) || 0,
@@ -210,14 +149,12 @@ async function startNewAutoCollection(sessionId: string, initialSeedKeywords: st
         updated_at: new Date().toISOString(),
       }));
 
-      // 데이터베이스에 저장
-      const { error: insertError } = await supabase
+      const { error: insertError } = await (supabase as any)
         .from('keywords')
-        // @ts-expect-error - Supabase 타입 정의 문제로 임시 처리
         .insert(keywordObjects);
 
       if (insertError) {
-        console.error('❌ 키워드 저장 오류:', insertError);
+        console.error('키워드 저장 오류:', insertError);
         continue;
       }
 
@@ -227,73 +164,37 @@ async function startNewAutoCollection(sessionId: string, initialSeedKeywords: st
       
       console.log(`✅ ${newKeywords.length}개 키워드 저장 완료! 총 수집: ${currentCount}개`);
       
-      // 성공 로그 추가
-      const sessionStateForLog = await getSessionState(sessionId);
-      await updateSessionState(sessionId, {
+      // 세션 상태 업데이트
+      updateSessionState(sessionId, {
         current_count: currentCount,
+        current_seed_keywords: selectedSeeds,
+        used_seed_keywords: Array.from(usedAsSeedKeywords),
         message: `${newKeywords.length}개 키워드 저장 완료! 총 수집: ${currentCount}개`,
-        logs: [
-          ...(sessionStateForLog?.logs || []),
-          `✅ ${newKeywords.length}개 키워드 저장 완료! 총 수집: ${currentCount}개`
-        ].slice(-10),
+        logs: [`✅ ${newKeywords.length}개 키워드 저장 완료! 총 수집: ${currentCount}개`],
       });
-      
-      // 문서수 자동 조회 (선택적)
-      console.log('📄 문서수 자동 조회 시작...');
-      const { getDocumentCounts } = await import('@/lib/naver/documents');
-      
-      for (const keywordObj of keywordObjects) {
-        try {
-          const docCounts = await getDocumentCounts(keywordObj.keyword);
-          await supabase
-            .from('keywords')
-            // @ts-expect-error - Supabase 타입 정의 문제로 임시 처리
-            .update({
-              blog_count: docCounts.blogCount,
-              cafe_count: docCounts.cafeCount,
-              web_count: docCounts.webCount,
-              news_count: docCounts.newsCount,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('keyword', keywordObj.keyword);
-          console.log(`📄 "${keywordObj.keyword}" 문서수 업데이트 완료`);
-        } catch (docError) {
-          console.error(`❌ "${keywordObj.keyword}" 문서수 조회 오류:`, docError);
-        }
-      }
       
       // 3초 대기 (API 제한 고려)
       await new Promise(resolve => setTimeout(resolve, 3000));
     }
     
     console.log(`🎉 자동 수집 완료! 총 ${currentCount}개 키워드 수집 (목표: ${targetCount}개)`);
-    console.log(`📊 사용된 시드키워드: ${usedAsSeedKeywords.size}개`);
-    console.log(`📊 총 수집된 키워드: ${allCollectedKeywords.size}개`);
     
     // 완료 상태 업데이트
-    const sessionStateForCompletion = await getSessionState(sessionId);
-    await updateSessionState(sessionId, {
+    updateSessionState(sessionId, {
       status: 'completed',
       current_count: currentCount,
       message: `자동 수집 완료! 총 ${currentCount}개 키워드 수집`,
-      logs: [
-        ...(sessionStateForCompletion?.logs || []),
-        `🎉 자동 수집 완료! 총 ${currentCount}개 키워드 수집 (목표: ${targetCount}개)`
-      ].slice(-10),
+      logs: [`🎉 자동 수집 완료! 총 ${currentCount}개 키워드 수집 (목표: ${targetCount}개)`],
     });
 
   } catch (error) {
     console.error('❌ 자동 수집 오류:', error);
     
     // 오류 상태 업데이트
-    const sessionStateForFinalError = await getSessionState(sessionId);
-    await updateSessionState(sessionId, {
+    updateSessionState(sessionId, {
       status: 'error',
       message: `자동 수집 오류: ${error instanceof Error ? error.message : String(error)}`,
-      logs: [
-        ...(sessionStateForFinalError?.logs || []),
-        `❌ 자동 수집 오류: ${error instanceof Error ? error.message : String(error)}`
-      ].slice(-10),
+      logs: [`❌ 자동 수집 오류: ${error instanceof Error ? error.message : String(error)}`],
     });
   }
 }
