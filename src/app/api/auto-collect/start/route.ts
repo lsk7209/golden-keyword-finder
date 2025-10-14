@@ -117,8 +117,9 @@ async function startNewAutoCollection(sessionId: string, initialSeedKeywords: st
       console.log('🔍 네이버 API 호출 시작...');
       const { searchKeywords } = await import('@/lib/naver/keywords');
       
+      let relatedKeywords;
       try {
-        const relatedKeywords = await searchKeywords(selectedSeeds, true);
+        relatedKeywords = await searchKeywords(selectedSeeds, true);
         console.log('🔍 네이버 API 응답:', relatedKeywords?.length || 0, '개 키워드');
         
         if (!relatedKeywords || relatedKeywords.length === 0) {
