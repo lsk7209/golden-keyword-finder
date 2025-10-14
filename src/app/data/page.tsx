@@ -61,7 +61,8 @@ export default function DataPage() {
       const { data: allData, count: totalCount, error } = await supabase
         .from('keywords')
         .select('*', { count: 'exact' })
-        .order('created_at', { ascending: false }); // 기본 정렬로 모든 데이터 가져오기
+        .order('created_at', { ascending: false })
+        .limit(10000); // 최대 10000개까지 가져오기 (기본 1000개 제한 해제)
 
       if (error) {
         console.error('Supabase 오류:', error);
