@@ -101,7 +101,7 @@ export function useAutoCollect() {
 
         // 새로운 키워드만 필터링
         const newKeywords = relatedKeywords.filter(
-          (keyword: any) => !allCollectedKeywords.current.has(keyword.keyword)
+          (keyword: { keyword: string }) => !allCollectedKeywords.current.has(keyword.keyword)
         );
 
         if (newKeywords.length === 0) {
@@ -123,7 +123,7 @@ export function useAutoCollect() {
         }
 
         // 수집된 키워드를 allCollectedKeywords에 추가
-        newKeywords.forEach((k: any) => allCollectedKeywords.current.add(k.keyword));
+        newKeywords.forEach((k: { keyword: string }) => allCollectedKeywords.current.add(k.keyword));
         
         const newCount = allCollectedKeywords.current.size;
         
@@ -162,7 +162,7 @@ export function useAutoCollect() {
       await collectKeywords();
     }, 5000);
 
-  }, [state.isRunning, addLog]);
+  }, [state.isRunning, addLog, stopAutoCollect]);
 
   const stopAutoCollect = useCallback(() => {
     if (intervalRef.current) {
