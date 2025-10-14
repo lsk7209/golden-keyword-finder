@@ -586,13 +586,6 @@ export default function DataPage() {
               sortField={sortField}
               sortDirection={sortDirection}
             />
-            {isAutoCollecting && (
-              <div className="p-4 bg-blue-50 border-t border-blue-200">
-                <p className="text-sm text-blue-700 text-center">
-                  🤖 자동 수집 진행 중... 새로운 키워드가 자동으로 추가됩니다
-                </p>
-              </div>
-            )}
             <Pagination
               currentPage={currentPage}
               totalPages={Math.ceil(totalCount / pageSize)}
