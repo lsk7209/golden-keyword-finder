@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     console.log(`📊 상태 확인 요청: ${sessionId}`);
 
     // 세션 상태 가져오기
-    const sessionState = getSessionState(sessionId);
+    const sessionState = await getSessionState(sessionId);
     
     if (!sessionState) {
       console.log(`❌ 세션을 찾을 수 없음: ${sessionId}`);

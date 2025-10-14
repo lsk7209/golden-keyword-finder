@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
 
     console.log(`🛑 자동 수집 중지 요청: ${sessionId}`);
     
-    updateSessionState(sessionId, {
+    await updateSessionState(sessionId, {
       status: 'stopped',
       message: '자동 수집이 사용자 요청으로 중지되었습니다.',
       logs: [`⏹️ 자동 수집 중지됨 (사용자 요청)`],
