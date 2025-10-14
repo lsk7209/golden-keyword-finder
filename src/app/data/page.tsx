@@ -58,7 +58,7 @@ export default function DataPage() {
       console.log(`키워드 조회 시작: page=${page}, size=${size}`);
       
       // 모든 키워드를 가져와서 클라이언트에서 필터링 및 정렬
-      const { data: allData, error } = await supabase
+      const { data: allData, count: totalCount, error } = await supabase
         .from('keywords')
         .select('*', { count: 'exact' })
         .order('created_at', { ascending: false }); // 기본 정렬로 모든 데이터 가져오기
@@ -212,7 +212,7 @@ export default function DataPage() {
           setSeedKeywords(paginatedKeywords.slice(0, 3).map(k => k.keyword));
         }
         
-        console.log(`키워드 조회 완료: ${paginatedKeywords.length}개 (필터링된 총 ${sortedKeywords.length}개, 전체 ${allKeywords.length}개)`);
+        console.log(`키워드 조회 완료: ${paginatedKeywords.length}개 (필터링된 총 ${sortedKeywords.length}개, 전체 ${totalCount || allKeywords.length}개)`);
       } else {
         console.log('데이터가 없습니다.');
         setKeywords([] as Keyword[]);
