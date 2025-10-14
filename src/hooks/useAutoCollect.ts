@@ -60,7 +60,7 @@ export function useAutoCollect() {
       if (response.ok) {
         const data = await response.json();
         const existingKeywords = data.keywords || [];
-        const existingKeywordSet = new Set(existingKeywords.map((k: { keyword: string }) => k.keyword));
+        const existingKeywordSet = new Set<string>(existingKeywords.map((k: { keyword: string }) => k.keyword));
         
         // 기존 키워드들과 초기 시드키워드들을 합치기
         allCollectedKeywords.current = new Set([...existingKeywordSet, ...seedKeywords]);
