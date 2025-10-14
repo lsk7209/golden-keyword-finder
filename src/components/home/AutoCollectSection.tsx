@@ -58,11 +58,11 @@ export function AutoCollectSection({
             onChange={(e) => setTargetInput(parseInt(e.target.value) || 0)}
             disabled={isAutoCollecting}
             min="10"
-            max="1000"
+            max="10000000"
             className="w-full"
           />
           <p className="text-xs text-gray-500 mt-1">
-            최소 10개, 최대 1000개까지 설정 가능합니다
+            최소 10개, 최대 1,000만개까지 설정 가능합니다
           </p>
         </div>
 
