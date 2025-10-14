@@ -37,7 +37,8 @@ export async function GET(request: NextRequest) {
 
     // 데이터베이스에서 실제 키워드 수 확인
     const supabase = await createClient();
-    const { count, error } = await (supabase as any)
+    // @ts-expect-error - Supabase 타입 정의 문제로 임시 처리
+    const { count, error } = await supabase
       .from('keywords')
       .select('*', { count: 'exact', head: true });
 

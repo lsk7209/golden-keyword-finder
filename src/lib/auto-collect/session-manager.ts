@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+// import { createClient } from '@/lib/supabase/server'; // 메모리 기반으로 변경하여 사용하지 않음
 
 // 세션 상태 타입 정의
 export interface SessionState {
