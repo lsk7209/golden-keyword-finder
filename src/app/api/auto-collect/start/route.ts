@@ -70,13 +70,28 @@ export async function POST(request: NextRequest) {
 async function startNewAutoCollection(sessionId: string, initialSeedKeywords: string[], targetCount: number) {
   const supabase = await createClient();
   
+  // 데이터베이스에서 기존 키워드들 가져오기
+  const { data: existingKeywords, error: fetchError } = await supabase
+    .from('keywords')
+    .select('keyword');
+  
+  if (fetchError) {
+    console.error('기존 키워드 조회 오류:', fetchError);
+  }
+  
   // 상태 관리
   const allCollectedKeywords = new Set<string>(initialSeedKeywords); // 수집된 모든 키워드
-  const usedAsSeedKeywords = new Set<string>(initialSeedKeywords); // 시드로 사용된 키워드
-  let currentCount = initialSeedKeywords.length; // 현재 수집된 키워드 수
+  const usedAsSeedKeywords = new Set<string>(); // 시드로 사용된 키워드 (초기에는 비어있음)
+  
+  // 기존 키워드들을 allCollectedKeywords에 추가
+  if (existingKeywords) {
+    existingKeywords.forEach(k => allCollectedKeywords.add(k.keyword));
+  }
+  
+  let currentCount = allCollectedKeywords.size; // 현재 수집된 키워드 수
   let iterationCount = 0; // 반복 횟수
   
-  console.log(`🎯 자동 수집 시작 - 목표: ${targetCount}개, 초기 키워드: ${initialSeedKeywords.length}개`);
+  console.log(`🎯 자동 수집 시작 - 목표: ${targetCount}개, 기존 키워드: ${allCollectedKeywords.size}개, 초기 시드키워드: ${initialSeedKeywords.length}개`);
 
   try {
     while (currentCount < targetCount && iterationCount < 10000) { // 최대 10,000회 반복 (대규모 수집 지원)
@@ -102,19 +117,25 @@ async function startNewAutoCollection(sessionId: string, initialSeedKeywords: st
         keyword => !usedAsSeedKeywords.has(keyword)
       );
       
+      console.log(`📋 전체 수집된 키워드: ${allCollectedKeywords.size}개`);
+      console.log(`📋 사용된 시드키워드: ${usedAsSeedKeywords.size}개`);
       console.log(`📋 사용 가능한 시드키워드: ${availableForSeed.length}개`);
       
       if (availableForSeed.length === 0) {
         console.log('❌ 더 이상 사용할 수 있는 시드키워드가 없습니다.');
+        console.log('📊 사용된 시드키워드 목록:', Array.from(usedAsSeedKeywords).slice(0, 10));
         break;
       }
       
       // 시드키워드 선택 (최대 3개)
       const selectedSeeds = availableForSeed.slice(0, 3);
       console.log(`🌱 선택된 시드키워드: ${selectedSeeds.join(', ')}`);
+      console.log(`🌱 선택 전 사용된 시드키워드 수: ${usedAsSeedKeywords.size}개`);
       
       // 선택된 키워드를 사용된 키워드에 추가
       selectedSeeds.forEach(keyword => usedAsSeedKeywords.add(keyword));
+      
+      console.log(`🌱 선택 후 사용된 시드키워드 수: ${usedAsSeedKeywords.size}개`);
       
       // 네이버 API로 연관키워드 검색
       console.log('🔍 네이버 API 호출 시작...');
