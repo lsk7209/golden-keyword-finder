@@ -20,21 +20,39 @@ export function parseNaverNumber(value: string): number {
  * 네이버 API 응답 파싱 및 정규화
  */
 export function parseKeywordResults(data: { keywordList?: Array<Record<string, unknown>> }): NaverKeyword[] {
+  console.log('🔍 파싱 함수 시작 - 입력 데이터:', data);
+  
   if (!data.keywordList || !Array.isArray(data.keywordList)) {
+    console.log('❌ keywordList가 없거나 배열이 아닙니다:', data.keywordList);
     return [];
   }
 
-  return data.keywordList.map((item: Record<string, unknown>) => ({
-    keyword: String(item.relKeyword || ''),
-    monthlyPcQcCnt: String(item.monthlyPcQcCnt || '0'),
-    monthlyMobileQcCnt: String(item.monthlyMobileQcCnt || '0'),
-    monthlyAvePcClkCnt: String(item.monthlyAvePcClkCnt || '0'),
-    monthlyAveMobileClkCnt: String(item.monthlyAveMobileClkCnt || '0'),
-    monthlyAvePcCtr: String(item.monthlyAvePcCtr || '0'),
-    monthlyAveMobileCtr: String(item.monthlyAveMobileCtr || '0'),
-    plAvgDepth: String(item.plAvgDepth || '0'),
-    compIdx: String(item.compIdx || '낮음'),
-  }));
+  console.log('📝 파싱할 keywordList 길이:', data.keywordList.length);
+  
+  const results = data.keywordList.map((item: Record<string, unknown>, index: number) => {
+    console.log(`🔍 아이템 ${index} 파싱:`, item);
+    console.log(`- relKeyword:`, item.relKeyword);
+    console.log(`- monthlyPcQcCnt:`, item.monthlyPcQcCnt);
+    console.log(`- monthlyMobileQcCnt:`, item.monthlyMobileQcCnt);
+    
+    const parsed = {
+      keyword: String(item.relKeyword || ''),
+      monthlyPcQcCnt: String(item.monthlyPcQcCnt || '0'),
+      monthlyMobileQcCnt: String(item.monthlyMobileQcCnt || '0'),
+      monthlyAvePcClkCnt: String(item.monthlyAvePcClkCnt || '0'),
+      monthlyAveMobileClkCnt: String(item.monthlyAveMobileClkCnt || '0'),
+      monthlyAvePcCtr: String(item.monthlyAvePcCtr || '0'),
+      monthlyAveMobileCtr: String(item.monthlyAveMobileCtr || '0'),
+      plAvgDepth: String(item.plAvgDepth || '0'),
+      compIdx: String(item.compIdx || '낮음'),
+    };
+    
+    console.log(`✅ 파싱된 아이템 ${index}:`, parsed);
+    return parsed;
+  });
+  
+  console.log('🎯 최종 파싱 결과:', results.length, '개');
+  return results;
 }
 
 /**
@@ -111,21 +129,53 @@ async function searchKeywordsBatch(
     }
     
     const data = await response.json();
-    console.log('네이버 API 응답 데이터:', JSON.stringify(data, null, 2));
+    console.log('🔍 네이버 API 응답 데이터 전체:', JSON.stringify(data, null, 2));
     
     // 응답 구조 상세 분석
+    console.log('📊 응답 구조 분석:');
+    console.log('- 전체 키:', Object.keys(data));
+    console.log('- keywordList 타입:', typeof data.keywordList);
+    console.log('- keywordList 존재 여부:', !!data.keywordList);
+    
     if (data.keywordList) {
-      console.log('keywordList 존재:', data.keywordList.length, '개');
-      console.log('keywordList 샘플:', data.keywordList.slice(0, 2));
+      console.log('✅ keywordList 존재:', data.keywordList.length, '개');
+      if (data.keywordList.length > 0) {
+        console.log('📝 keywordList 샘플 (첫 번째):', JSON.stringify(data.keywordList[0], null, 2));
+        console.log('📝 keywordList 샘플 (두 번째):', data.keywordList[1] ? JSON.stringify(data.keywordList[1], null, 2) : '없음');
+      } else {
+        console.log('⚠️ keywordList가 빈 배열입니다!');
+      }
     } else {
-      console.log('keywordList가 없습니다. 응답 구조:', Object.keys(data));
+      console.log('❌ keywordList가 없습니다!');
+      console.log('🔍 대안 키들 확인:');
+      Object.keys(data).forEach(key => {
+        console.log(`- ${key}:`, typeof data[key], Array.isArray(data[key]) ? `(배열, ${data[key].length}개)` : '');
+      });
+    }
+    
+    // 에러 응답 확인
+    if (data.error) {
+      console.error('❌ 네이버 API 에러:', data.error);
+      throw new Error(`네이버 API 에러: ${data.error}`);
+    }
+    
+    // 빈 응답 확인
+    if (!data.keywordList || data.keywordList.length === 0) {
+      console.warn('⚠️ 키워드가 반환되지 않았습니다. 시드키워드를 확인해주세요.');
+      console.log('🔍 요청한 시드키워드:', seedKeywords);
+      console.log('🔍 전체 응답:', data);
+      
+      // 빈 결과라도 빈 배열 반환 (에러가 아님)
+      return [];
     }
     
     const parsedResults = parseKeywordResults(data);
-    console.log('파싱된 키워드 결과:', parsedResults.length, '개');
+    console.log('✅ 파싱된 키워드 결과:', parsedResults.length, '개');
     
-    if (parsedResults.length === 0) {
-      console.log('키워드가 파싱되지 않았습니다. 원본 데이터:', data);
+    if (parsedResults.length === 0 && data.keywordList.length > 0) {
+      console.error('❌ 키워드가 파싱되지 않았습니다!');
+      console.log('🔍 원본 keywordList:', data.keywordList);
+      console.log('🔍 파싱 함수 확인 필요');
     }
     
     return parsedResults;
