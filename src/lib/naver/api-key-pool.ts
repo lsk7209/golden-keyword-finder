@@ -59,6 +59,16 @@ export class ApiKeyPool {
       }));
 
     console.log(`🔑 API 키 풀 초기화: ${this.keys.length}개 키 사용 가능`);
+    
+    // 디버깅: 환경 변수 상태 출력
+    console.log('🔍 환경 변수 상태:', {
+      SEARCHAD_API_KEY: process.env.SEARCHAD_API_KEY ? '설정됨' : '미설정',
+      SEARCHAD_SECRET: process.env.SEARCHAD_SECRET ? '설정됨' : '미설정',
+      SEARCHAD_CUSTOMER_ID: process.env.SEARCHAD_CUSTOMER_ID ? '설정됨' : '미설정',
+      SEARCHAD_API_KEY_2: process.env.SEARCHAD_API_KEY_2 ? '설정됨' : '미설정',
+      SEARCHAD_SECRET_2: process.env.SEARCHAD_SECRET_2 ? '설정됨' : '미설정',
+      SEARCHAD_CUSTOMER_ID_2: process.env.SEARCHAD_CUSTOMER_ID_2 ? '설정됨' : '미설정',
+    });
   }
 
   /**

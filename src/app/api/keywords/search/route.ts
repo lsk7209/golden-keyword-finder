@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { searchKeywords } from '@/lib/naver/keywords';
 import { SearchKeywordsRequest, SearchKeywordsResponse } from '@/types/api';
 
-// API 타임아웃 설정 (10초로 단축)
-export const maxDuration = 10;
+// API 타임아웃 설정 (30초로 증가)
+export const maxDuration = 30;
 
 
 export async function POST(request: NextRequest) {

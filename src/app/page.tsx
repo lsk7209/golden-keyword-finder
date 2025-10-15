@@ -46,7 +46,19 @@ export default function HomePage() {
         }),
       });
 
-      const result: ApiResponse<SearchKeywordsResponse> = await response.json();
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API 응답 오류:', response.status, errorText);
+        throw new Error(`API 호출 실패 (${response.status}): ${errorText}`);
+      }
+
+      let result: ApiResponse<SearchKeywordsResponse>;
+      try {
+        result = await response.json();
+      } catch (parseError) {
+        console.error('JSON 파싱 오류:', parseError);
+        throw new Error('서버 응답을 파싱할 수 없습니다. 잠시 후 다시 시도해주세요.');
+      }
 
       if (!result.success) {
         throw new Error(result.error || '검색에 실패했습니다.');
