@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { apiKeyPool } from '@/lib/naver/api-key-pool';
 
 export async function GET() {
