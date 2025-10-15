@@ -32,7 +32,7 @@ const defaultFilters: FilterOptions = {
   searchTerm: '',
   goldenScoreRange: [0, 999999999], // 매우 넓은 범위로 설정
   competitionLevels: ['낮음', '중간', '높음'],
-  searchVolumeMin: 500, // 기본값: 총검색수 500이상 (사용자 수정 가능)
+  searchVolumeMin: 0, // 모든 검색수 허용 (사용자 수정 가능)
   searchVolumeMax: 999999999, // 매우 넓은 범위로 설정
   docCountMax: 999999999, // 매우 넓은 범위로 설정
   // 문서수 범위 필터 - 매우 넓은 범위로 설정
@@ -46,7 +46,7 @@ const defaultFilters: FilterOptions = {
   newsCountMax: 999999999,
   dateRange: [new Date(2020, 0, 1), new Date()],
   tags: [],
-  showZeroDocCount: false, // 기본적으로 문서수 0인 키워드 숨김
+  showZeroDocCount: true, // 문서수 0인 키워드도 표시
 };
 
 // 최적화된 필터링 함수
