@@ -23,83 +23,90 @@ export class OpenApiKeyPool {
   }
 
   private initializeKeys() {
-    // 환경 변수에서 여러 오픈 API 키 로드
-    const keyConfigs = [
-      {
-        name: 'OpenAPI-Primary',
-        clientId: process.env.NAVER_CLIENT_ID,
-        clientSecret: process.env.NAVER_CLIENT_SECRET,
-      },
-      {
-        name: 'OpenAPI-Secondary',
-        clientId: process.env.NAVER_CLIENT_ID_2,
-        clientSecret: process.env.NAVER_CLIENT_SECRET_2,
-      },
-      {
-        name: 'OpenAPI-Tertiary',
-        clientId: process.env.NAVER_CLIENT_ID_3,
-        clientSecret: process.env.NAVER_CLIENT_SECRET_3,
-      },
-      {
-        name: 'OpenAPI-Quaternary',
-        clientId: process.env.NAVER_CLIENT_ID_4,
-        clientSecret: process.env.NAVER_CLIENT_SECRET_4,
-      },
-      {
-        name: 'OpenAPI-5',
-        clientId: process.env.NAVER_CLIENT_ID_5,
-        clientSecret: process.env.NAVER_CLIENT_SECRET_5,
-      },
-      {
-        name: 'OpenAPI-6',
-        clientId: process.env.NAVER_CLIENT_ID_6,
-        clientSecret: process.env.NAVER_CLIENT_SECRET_6,
-      },
-      {
-        name: 'OpenAPI-7',
-        clientId: process.env.NAVER_CLIENT_ID_7,
-        clientSecret: process.env.NAVER_CLIENT_SECRET_7,
-      },
-      {
-        name: 'OpenAPI-8',
-        clientId: process.env.NAVER_CLIENT_ID_8,
-        clientSecret: process.env.NAVER_CLIENT_SECRET_8,
-      },
-      {
-        name: 'OpenAPI-9',
-        clientId: process.env.NAVER_CLIENT_ID_9,
-        clientSecret: process.env.NAVER_CLIENT_SECRET_9,
-      },
-    ];
+    // 서버 환경에서만 환경 변수에서 키 로드
+    if (typeof window === 'undefined') {
+      // 서버 사이드: 환경 변수에서 여러 오픈 API 키 로드
+      const keyConfigs = [
+        {
+          name: 'OpenAPI-Primary',
+          clientId: process.env.NAVER_CLIENT_ID,
+          clientSecret: process.env.NAVER_CLIENT_SECRET,
+        },
+        {
+          name: 'OpenAPI-Secondary',
+          clientId: process.env.NAVER_CLIENT_ID_2,
+          clientSecret: process.env.NAVER_CLIENT_SECRET_2,
+        },
+        {
+          name: 'OpenAPI-Tertiary',
+          clientId: process.env.NAVER_CLIENT_ID_3,
+          clientSecret: process.env.NAVER_CLIENT_SECRET_3,
+        },
+        {
+          name: 'OpenAPI-Quaternary',
+          clientId: process.env.NAVER_CLIENT_ID_4,
+          clientSecret: process.env.NAVER_CLIENT_SECRET_4,
+        },
+        {
+          name: 'OpenAPI-5',
+          clientId: process.env.NAVER_CLIENT_ID_5,
+          clientSecret: process.env.NAVER_CLIENT_SECRET_5,
+        },
+        {
+          name: 'OpenAPI-6',
+          clientId: process.env.NAVER_CLIENT_ID_6,
+          clientSecret: process.env.NAVER_CLIENT_SECRET_6,
+        },
+        {
+          name: 'OpenAPI-7',
+          clientId: process.env.NAVER_CLIENT_ID_7,
+          clientSecret: process.env.NAVER_CLIENT_SECRET_7,
+        },
+        {
+          name: 'OpenAPI-8',
+          clientId: process.env.NAVER_CLIENT_ID_8,
+          clientSecret: process.env.NAVER_CLIENT_SECRET_8,
+        },
+        {
+          name: 'OpenAPI-9',
+          clientId: process.env.NAVER_CLIENT_ID_9,
+          clientSecret: process.env.NAVER_CLIENT_SECRET_9,
+        },
+      ];
 
-    // 유효한 키만 추가
-    this.keys = keyConfigs
-      .filter(config => config.clientId && config.clientSecret)
-      .map(config => ({
-        name: config.name,
-        clientId: config.clientId!,
-        clientSecret: config.clientSecret!,
-        requestCount: 0,
-        errorCount: 0,
-      }));
+      // 유효한 키만 추가
+      this.keys = keyConfigs
+        .filter(config => config.clientId && config.clientSecret)
+        .map(config => ({
+          name: config.name,
+          clientId: config.clientId!,
+          clientSecret: config.clientSecret!,
+          requestCount: 0,
+          errorCount: 0,
+        }));
 
-    console.log(`🔑 네이버 오픈 API 키 풀 초기화: ${this.keys.length}개 키 사용 가능`);
-    
-    // 디버깅: 환경 변수 상태 출력
-    console.log('🔍 오픈 API 환경 변수 상태:', {
-      NAVER_CLIENT_ID: process.env.NAVER_CLIENT_ID ? '설정됨' : '미설정',
-      NAVER_CLIENT_SECRET: process.env.NAVER_CLIENT_SECRET ? '설정됨' : '미설정',
-      NAVER_CLIENT_ID_2: process.env.NAVER_CLIENT_ID_2 ? '설정됨' : '미설정',
-      NAVER_CLIENT_SECRET_2: process.env.NAVER_CLIENT_SECRET_2 ? '설정됨' : '미설정',
-      NAVER_CLIENT_ID_4: process.env.NAVER_CLIENT_ID_4 ? '설정됨' : '미설정',
-      NAVER_CLIENT_SECRET_4: process.env.NAVER_CLIENT_SECRET_4 ? '설정됨' : '미설정',
-      NAVER_CLIENT_ID_5: process.env.NAVER_CLIENT_ID_5 ? '설정됨' : '미설정',
-      NAVER_CLIENT_SECRET_5: process.env.NAVER_CLIENT_SECRET_5 ? '설정됨' : '미설정',
-    });
-    
-    // 키가 없으면 경고
-    if (this.keys.length === 0) {
-      console.warn('⚠️ 네이버 오픈 API 키가 설정되지 않았습니다. Vercel 환경 변수를 확인해주세요.');
+      console.log(`🔑 네이버 오픈 API 키 풀 초기화: ${this.keys.length}개 키 사용 가능`);
+      
+      // 디버깅: 환경 변수 상태 출력
+      console.log('🔍 오픈 API 환경 변수 상태:', {
+        NAVER_CLIENT_ID: process.env.NAVER_CLIENT_ID ? '설정됨' : '미설정',
+        NAVER_CLIENT_SECRET: process.env.NAVER_CLIENT_SECRET ? '설정됨' : '미설정',
+        NAVER_CLIENT_ID_2: process.env.NAVER_CLIENT_ID_2 ? '설정됨' : '미설정',
+        NAVER_CLIENT_SECRET_2: process.env.NAVER_CLIENT_SECRET_2 ? '설정됨' : '미설정',
+        NAVER_CLIENT_ID_4: process.env.NAVER_CLIENT_ID_4 ? '설정됨' : '미설정',
+        NAVER_CLIENT_SECRET_4: process.env.NAVER_CLIENT_SECRET_4 ? '설정됨' : '미설정',
+        NAVER_CLIENT_ID_5: process.env.NAVER_CLIENT_ID_5 ? '설정됨' : '미설정',
+        NAVER_CLIENT_SECRET_5: process.env.NAVER_CLIENT_SECRET_5 ? '설정됨' : '미설정',
+      });
+      
+      // 키가 없으면 경고
+      if (this.keys.length === 0) {
+        console.warn('⚠️ 네이버 오픈 API 키가 설정되지 않았습니다. Vercel 환경 변수를 확인해주세요.');
+      }
+    } else {
+      // 클라이언트 사이드: API를 통해 상태 확인
+      console.log('🔑 클라이언트 사이드: 오픈 API 키 풀은 서버에서 관리됩니다.');
+      console.log('🔍 브라우저에서는 /api/keywords/api-key-status를 통해 상태를 확인하세요.');
     }
   }
 

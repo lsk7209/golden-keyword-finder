@@ -24,58 +24,65 @@ export class ApiKeyPool {
   }
 
   private initializeKeys() {
-    // 환경 변수에서 여러 API 키 로드
-    const keyConfigs = [
-      {
-        name: 'Primary',
-        apiKey: process.env.SEARCHAD_API_KEY,
-        secret: process.env.SEARCHAD_SECRET,
-        customerId: process.env.SEARCHAD_CUSTOMER_ID,
-      },
-      {
-        name: 'Secondary',
-        apiKey: process.env.SEARCHAD_API_KEY_2,
-        secret: process.env.SEARCHAD_SECRET_2,
-        customerId: process.env.SEARCHAD_CUSTOMER_ID_2,
-      },
-      {
-        name: 'Tertiary',
-        apiKey: process.env.SEARCHAD_API_KEY_3,
-        secret: process.env.SEARCHAD_SECRET_3,
-        customerId: process.env.SEARCHAD_CUSTOMER_ID_3,
-      },
-    ];
+    // 서버 환경에서만 환경 변수에서 키 로드
+    if (typeof window === 'undefined') {
+      // 서버 사이드: 환경 변수에서 여러 API 키 로드
+      const keyConfigs = [
+        {
+          name: 'Primary',
+          apiKey: process.env.SEARCHAD_API_KEY,
+          secret: process.env.SEARCHAD_SECRET,
+          customerId: process.env.SEARCHAD_CUSTOMER_ID,
+        },
+        {
+          name: 'Secondary',
+          apiKey: process.env.SEARCHAD_API_KEY_2,
+          secret: process.env.SEARCHAD_SECRET_2,
+          customerId: process.env.SEARCHAD_CUSTOMER_ID_2,
+        },
+        {
+          name: 'Tertiary',
+          apiKey: process.env.SEARCHAD_API_KEY_3,
+          secret: process.env.SEARCHAD_SECRET_3,
+          customerId: process.env.SEARCHAD_CUSTOMER_ID_3,
+        },
+      ];
 
-    // 유효한 키만 추가
-    this.keys = keyConfigs
-      .filter(config => config.apiKey && config.secret && config.customerId)
-      .map(config => ({
-        name: config.name,
-        apiKey: config.apiKey!,
-        secret: config.secret!,
-        customerId: config.customerId!,
-        requestCount: 0,
-        errorCount: 0,
-      }));
+      // 유효한 키만 추가
+      this.keys = keyConfigs
+        .filter(config => config.apiKey && config.secret && config.customerId)
+        .map(config => ({
+          name: config.name,
+          apiKey: config.apiKey!,
+          secret: config.secret!,
+          customerId: config.customerId!,
+          requestCount: 0,
+          errorCount: 0,
+        }));
 
-    console.log(`🔑 API 키 풀 초기화: ${this.keys.length}개 키 사용 가능`);
-    
-    // 디버깅: 환경 변수 상태 출력
-    console.log('🔍 환경 변수 상태:', {
-      SEARCHAD_API_KEY: process.env.SEARCHAD_API_KEY ? '설정됨' : '미설정',
-      SEARCHAD_SECRET: process.env.SEARCHAD_SECRET ? '설정됨' : '미설정',
-      SEARCHAD_CUSTOMER_ID: process.env.SEARCHAD_CUSTOMER_ID ? '설정됨' : '미설정',
-      SEARCHAD_API_KEY_2: process.env.SEARCHAD_API_KEY_2 ? '설정됨' : '미설정',
-      SEARCHAD_SECRET_2: process.env.SEARCHAD_SECRET_2 ? '설정됨' : '미설정',
-      SEARCHAD_CUSTOMER_ID_2: process.env.SEARCHAD_CUSTOMER_ID_2 ? '설정됨' : '미설정',
-      SEARCHAD_API_KEY_3: process.env.SEARCHAD_API_KEY_3 ? '설정됨' : '미설정',
-      SEARCHAD_SECRET_3: process.env.SEARCHAD_SECRET_3 ? '설정됨' : '미설정',
-      SEARCHAD_CUSTOMER_ID_3: process.env.SEARCHAD_CUSTOMER_ID_3 ? '설정됨' : '미설정',
-    });
+      console.log(`🔑 API 키 풀 초기화: ${this.keys.length}개 키 사용 가능`);
+      
+      // 디버깅: 환경 변수 상태 출력
+      console.log('🔍 환경 변수 상태:', {
+        SEARCHAD_API_KEY: process.env.SEARCHAD_API_KEY ? '설정됨' : '미설정',
+        SEARCHAD_SECRET: process.env.SEARCHAD_SECRET ? '설정됨' : '미설정',
+        SEARCHAD_CUSTOMER_ID: process.env.SEARCHAD_CUSTOMER_ID ? '설정됨' : '미설정',
+        SEARCHAD_API_KEY_2: process.env.SEARCHAD_API_KEY_2 ? '설정됨' : '미설정',
+        SEARCHAD_SECRET_2: process.env.SEARCHAD_SECRET_2 ? '설정됨' : '미설정',
+        SEARCHAD_CUSTOMER_ID_2: process.env.SEARCHAD_CUSTOMER_ID_2 ? '설정됨' : '미설정',
+        SEARCHAD_API_KEY_3: process.env.SEARCHAD_API_KEY_3 ? '설정됨' : '미설정',
+        SEARCHAD_SECRET_3: process.env.SEARCHAD_SECRET_3 ? '설정됨' : '미설정',
+        SEARCHAD_CUSTOMER_ID_3: process.env.SEARCHAD_CUSTOMER_ID_3 ? '설정됨' : '미설정',
+      });
 
-    // 키가 없으면 경고
-    if (this.keys.length === 0) {
-      console.warn('⚠️ API 키가 설정되지 않았습니다. Vercel 환경 변수를 확인해주세요.');
+      // 키가 없으면 경고
+      if (this.keys.length === 0) {
+        console.warn('⚠️ API 키가 설정되지 않았습니다. Vercel 환경 변수를 확인해주세요.');
+      }
+    } else {
+      // 클라이언트 사이드: API를 통해 상태 확인
+      console.log('🔑 클라이언트 사이드: API 키 풀은 서버에서 관리됩니다.');
+      console.log('🔍 브라우저에서는 /api/keywords/api-key-status를 통해 상태를 확인하세요.');
     }
   }
 
