@@ -1,5 +1,6 @@
 // 자동 수집을 위한 Web Worker
 // 메인 스레드를 블로킹하지 않고 백그라운드에서 실행
+// 버전: 2024-10-15-v3 (시드키워드 사용 문제 해결)
 
 interface AutoCollectMessage {
   type: 'START_AUTO_COLLECT' | 'STOP_AUTO_COLLECT';
@@ -58,23 +59,33 @@ class AutoCollectWorker {
       const response = await fetch('/api/keywords/stats');
       if (response.ok) {
         const data = await response.json();
+        this.sendMessage('LOG', `📊 API 응답 데이터: ${JSON.stringify(data).substring(0, 200)}...`);
+        
         const existingKeywords = data.keywords || [];
-        const existingKeywordSet = new Set<string>(existingKeywords.map((k: { keyword: string }) => k.keyword));
+        this.sendMessage('LOG', `📊 기존 키워드 배열 길이: ${existingKeywords.length}`);
         
-        // 기존 키워드들과 초기 시드키워드들을 합치기
-        this.allCollectedKeywords = new Set([...existingKeywordSet, ...seedKeywords]);
-        // 초기 시드키워드만 사용된 것으로 표시 (기존 키워드들은 새로운 시드로 사용 가능)
-        this.usedAsSeedKeywords = new Set(seedKeywords);
-        
-        this.sendMessage('LOG', `📊 기존 키워드 ${existingKeywordSet.size}개 로드됨`);
-        this.sendMessage('LOG', `🌱 사용 가능한 시드키워드: ${existingKeywordSet.size}개 (기존) + ${seedKeywords.length}개 (초기) = ${this.allCollectedKeywords.size}개`);
+        if (Array.isArray(existingKeywords) && existingKeywords.length > 0) {
+          const existingKeywordSet = new Set<string>(existingKeywords.map((k: { keyword: string }) => k.keyword));
+          
+          // 기존 키워드들과 초기 시드키워드들을 합치기
+          this.allCollectedKeywords = new Set([...existingKeywordSet, ...seedKeywords]);
+          // 초기 시드키워드만 사용된 것으로 표시 (기존 키워드들은 새로운 시드로 사용 가능)
+          this.usedAsSeedKeywords = new Set(seedKeywords);
+          
+          this.sendMessage('LOG', `📊 기존 키워드 ${existingKeywordSet.size}개 로드됨`);
+          this.sendMessage('LOG', `🌱 사용 가능한 시드키워드: ${existingKeywordSet.size}개 (기존) + ${seedKeywords.length}개 (초기) = ${this.allCollectedKeywords.size}개`);
+        } else {
+          this.sendMessage('LOG', '📊 기존 키워드가 없거나 빈 배열입니다.');
+          // 기존 키워드가 없으면 초기 시드키워드만 사용
+          this.usedAsSeedKeywords = new Set();
+        }
       } else {
-        this.sendMessage('LOG', '⚠️ 기존 키워드 로드 실패, 초기 시드키워드만 사용');
+        this.sendMessage('LOG', `⚠️ API 응답 실패: ${response.status} ${response.statusText}`);
         // 실패 시에는 아무것도 사용된 것으로 표시하지 않음 (초기 시드키워드도 사용 가능)
         this.usedAsSeedKeywords = new Set();
       }
-    } catch {
-      this.sendMessage('LOG', '⚠️ 기존 키워드 로드 중 오류, 초기 시드키워드만 사용');
+    } catch (error) {
+      this.sendMessage('LOG', `⚠️ 기존 키워드 로드 중 오류: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
       // 오류 시에는 아무것도 사용된 것으로 표시하지 않음 (초기 시드키워드도 사용 가능)
       this.usedAsSeedKeywords = new Set();
     }
@@ -95,6 +106,9 @@ class AutoCollectWorker {
         );
 
         this.sendMessage('LOG', `🔍 전체 키워드: ${this.allCollectedKeywords.size}개, 사용된 시드: ${this.usedAsSeedKeywords.size}개, 사용 가능: ${availableForSeed.length}개`);
+        this.sendMessage('LOG', `🔍 전체 키워드 목록: ${Array.from(this.allCollectedKeywords).slice(0, 10).join(', ')}${this.allCollectedKeywords.size > 10 ? '...' : ''}`);
+        this.sendMessage('LOG', `🔍 사용된 시드 목록: ${Array.from(this.usedAsSeedKeywords).slice(0, 10).join(', ')}${this.usedAsSeedKeywords.size > 10 ? '...' : ''}`);
+        this.sendMessage('LOG', `🔍 사용 가능한 시드 목록: ${availableForSeed.slice(0, 10).join(', ')}${availableForSeed.length > 10 ? '...' : ''}`);
 
         if (availableForSeed.length === 0) {
           this.sendMessage('LOG', '❌ 더 이상 사용할 수 있는 시드키워드가 없습니다.');
