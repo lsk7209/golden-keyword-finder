@@ -1,6 +1,6 @@
 // 자동 수집을 위한 Web Worker
 // 메인 스레드를 블로킹하지 않고 백그라운드에서 실행
-// 버전: 2024-10-15-v3 (시드키워드 사용 문제 해결)
+// 버전: 2024-10-15-v4 (성능 최적화: API 호출 간격 증가, 배치 크기 제한)
 
 interface AutoCollectMessage {
   type: 'START_AUTO_COLLECT' | 'STOP_AUTO_COLLECT';
@@ -181,21 +181,36 @@ class AutoCollectWorker {
           this.currentCount = this.allCollectedKeywords.size;
           this.sendMessage('LOG', `✅ 새로운 키워드 ${newKeywords.length}개 추가됨 (총 ${this.currentCount}개)`);
           
-          // 배치 저장 API로 키워드 저장
+          // 배치 저장 API로 키워드 저장 (최대 20개씩)
           try {
             this.sendMessage('LOG', '💾 키워드 배치 저장 중...');
-            const saveResponse = await fetch('/api/keywords/save-batch', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(newKeywords),
-            });
-
-            if (saveResponse.ok) {
-              const saveResult = await saveResponse.json();
-              this.sendMessage('LOG', `💾 배치 저장 성공: ${saveResult.data?.saved || 0}개 저장됨`);
-            } else {
-              this.sendMessage('LOG', `⚠️ 배치 저장 실패: ${saveResponse.status}`);
+            const batchSize = 20;
+            const batches = [];
+            for (let i = 0; i < newKeywords.length; i += batchSize) {
+              batches.push(newKeywords.slice(i, i + batchSize));
             }
+            
+            let totalSaved = 0;
+            for (const batch of batches) {
+              const saveResponse = await fetch('/api/keywords/save-batch', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(batch),
+              });
+
+              if (saveResponse.ok) {
+                const saveResult = await saveResponse.json();
+                totalSaved += saveResult.data?.saved || 0;
+                this.sendMessage('LOG', `💾 배치 저장 성공: ${saveResult.data?.saved || 0}개 저장됨`);
+              } else {
+                this.sendMessage('LOG', `⚠️ 배치 저장 실패: ${saveResponse.status}`);
+              }
+              
+              // 배치 간 대기 (1초)
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+            
+            this.sendMessage('LOG', `💾 총 ${totalSaved}개 키워드 저장 완료`);
           } catch (saveError) {
             this.sendMessage('LOG', `⚠️ 배치 저장 오류: ${saveError instanceof Error ? saveError.message : '알 수 없는 오류'}`);
           }
@@ -214,15 +229,15 @@ class AutoCollectWorker {
           consecutiveFailures++;
         }
 
-        // API 호출 간격 (1초 대기)
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // API 호출 간격 (3초 대기 - 서버 부하 감소)
+        await new Promise(resolve => setTimeout(resolve, 3000));
 
       } catch (error) {
         this.sendMessage('LOG', `❌ 오류 발생: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
         consecutiveFailures++;
         
-        // 오류 발생 시 잠시 대기 후 계속
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // 오류 발생 시 잠시 대기 후 계속 (5초 대기)
+        await new Promise(resolve => setTimeout(resolve, 5000));
       }
     }
 
