@@ -176,6 +176,13 @@ export default function DataPage() {
         });
 
         // 클라이언트사이드 정렬 적용
+        console.log(`정렬 적용: 필드=${sortField}, 방향=${sortDirection}`);
+        console.log(`정렬 전 상위 5개 키워드:`, filteredKeywords.slice(0, 5).map(k => ({
+          keyword: k.keyword,
+          cafeCount: k.cafeCount,
+          totalSearchVolume: k.totalSearchVolume
+        })));
+        
         const sortedKeywords = [...filteredKeywords].sort((a, b) => {
           if (sortField === 'cafe_count') {
             // 카페문서수 오름차순(1순위) + 총검색수 내림차순(2순위)
@@ -199,6 +206,12 @@ export default function DataPage() {
             }
           }
         });
+        
+        console.log(`정렬 후 상위 5개 키워드:`, sortedKeywords.slice(0, 5).map(k => ({
+          keyword: k.keyword,
+          cafeCount: k.cafeCount,
+          totalSearchVolume: k.totalSearchVolume
+        })));
 
         // 페이지네이션 적용
         const offset = (page - 1) * size;
