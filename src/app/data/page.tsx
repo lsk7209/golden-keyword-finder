@@ -9,6 +9,7 @@ import { FilterSidebar } from '@/components/data/FilterSidebar';
 import { BulkActions } from '@/components/data/BulkActions';
 import { Pagination } from '@/components/data/Pagination';
 import { SimpleAutoCollect } from '@/components/home/SimpleAutoCollect';
+import { ApiKeyStatus } from '@/components/ApiKeyStatus';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -409,6 +410,9 @@ export default function DataPage() {
             </div>
           </div>
         </div>
+
+        {/* API 키 상태 */}
+        <ApiKeyStatus />
 
         {/* 통계 카드 */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
