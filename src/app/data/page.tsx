@@ -90,7 +90,7 @@ export default function DataPage() {
       
       // 자동 수집을 위한 시드키워드 설정 (상위 3개)
       if (paginatedKeywords.length > 0) {
-        setSeedKeywords(paginatedKeywords.slice(0, 3).map(k => k.keyword));
+        setSeedKeywords(paginatedKeywords.slice(0, 3).map((k: Keyword) => k.keyword));
       }
       
       console.log(`키워드 조회 완료: ${paginatedKeywords.length}개 (필터링된 총 ${filteredTotalCount}개, 전체 ${totalCountInDB}개)`);
