@@ -181,6 +181,25 @@ class AutoCollectWorker {
           this.currentCount = this.allCollectedKeywords.size;
           this.sendMessage('LOG', `✅ 새로운 키워드 ${newKeywords.length}개 추가됨 (총 ${this.currentCount}개)`);
           
+          // 배치 저장 API로 키워드 저장
+          try {
+            this.sendMessage('LOG', '💾 키워드 배치 저장 중...');
+            const saveResponse = await fetch('/api/keywords/save-batch', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(newKeywords),
+            });
+
+            if (saveResponse.ok) {
+              const saveResult = await saveResponse.json();
+              this.sendMessage('LOG', `💾 배치 저장 성공: ${saveResult.data?.saved || 0}개 저장됨`);
+            } else {
+              this.sendMessage('LOG', `⚠️ 배치 저장 실패: ${saveResponse.status}`);
+            }
+          } catch (saveError) {
+            this.sendMessage('LOG', `⚠️ 배치 저장 오류: ${saveError instanceof Error ? saveError.message : '알 수 없는 오류'}`);
+          }
+          
           // 성공 시 연속 실패 카운터 리셋
           consecutiveFailures = 0;
           

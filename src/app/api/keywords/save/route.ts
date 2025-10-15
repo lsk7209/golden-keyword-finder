@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { NaverKeyword } from '@/types/keyword';
@@ -70,9 +71,8 @@ export async function POST(request: NextRequest) {
 
     if (existing) {
       // 업데이트
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('keywords')
-        // @ts-expect-error - Supabase 타입 정의 문제로 인한 임시 해결
         .update({
           monthly_pc_qc_cnt: parseNaverNumber(keywordData!.monthlyPcQcCnt),
           monthly_mobile_qc_cnt: parseNaverNumber(keywordData!.monthlyMobileQcCnt),
@@ -89,7 +89,6 @@ export async function POST(request: NextRequest) {
           last_checked_at: now,
           updated_at: now,
         })
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .eq('id', (existing as any).id)
         .select()
         .single();
@@ -114,9 +113,8 @@ export async function POST(request: NextRequest) {
       });
     } else {
       // 새로 삽입
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('keywords')
-        // @ts-expect-error - Supabase 타입 정의 문제로 인한 임시 해결
         .insert({
           keyword: keywordData!.keyword,
           monthly_pc_qc_cnt: parseNaverNumber(keywordData!.monthlyPcQcCnt),
