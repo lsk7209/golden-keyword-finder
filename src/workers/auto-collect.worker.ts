@@ -156,15 +156,26 @@ class AutoCollectWorker {
         });
 
         if (!response.ok) {
-          throw new Error(`API 호출 실패: ${response.status}`);
+          const errorText = await response.text();
+          this.sendMessage('LOG', `❌ API 호출 실패: ${response.status} - ${errorText}`);
+          throw new Error(`API 호출 실패: ${response.status} - ${errorText}`);
         }
 
-        const result = await response.json();
+        let result;
+        try {
+          const responseText = await response.text();
+          this.sendMessage('LOG', `📄 API 응답 텍스트: ${responseText.substring(0, 200)}...`);
+          result = JSON.parse(responseText);
+        } catch (parseError) {
+          this.sendMessage('LOG', `❌ JSON 파싱 오류: ${parseError instanceof Error ? parseError.message : '알 수 없는 오류'}`);
+          throw new Error(`JSON 파싱 오류: ${parseError instanceof Error ? parseError.message : '알 수 없는 오류'}`);
+        }
+
         if (!result.success) {
           throw new Error(result.error || 'API 호출 실패');
         }
 
-        const relatedKeywords = result.data?.relatedKeywords || [];
+        const relatedKeywords = result.data?.keywords || [];
         this.sendMessage('LOG', `🔍 검색된 연관키워드: ${relatedKeywords.length}개`);
 
         // 새로운 키워드만 필터링
