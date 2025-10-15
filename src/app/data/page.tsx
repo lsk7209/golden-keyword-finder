@@ -57,168 +57,44 @@ export default function DataPage() {
     try {
       console.log(`키워드 조회 시작: page=${page}, size=${size}`);
       
-      // 모든 키워드를 가져와서 클라이언트에서 필터링 및 정렬
-      const { data: allData, count: totalCount, error } = await supabase
-        .from('keywords')
-        .select('*', { count: 'exact' })
-        .order('created_at', { ascending: false })
-        .limit(10000); // 최대 10000개까지 가져오기 (기본 1000개 제한 해제)
+      // 서버사이드 페이지네이션을 위한 API 호출
+      const response = await fetch('/api/keywords/list', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          page,
+          pageSize: size,
+          filters,
+          sortField,
+          sortDirection,
+        }),
+      });
 
-      if (error) {
-        console.error('Supabase 오류:', error);
-        setError(`데이터베이스 오류: ${error.message}`);
-        throw error;
+      if (!response.ok) {
+        throw new Error(`API 호출 실패: ${response.status}`);
       }
 
-      if (allData) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const allKeywords: Keyword[] = allData.map((item: any) => ({
-          id: item.id,
-          keyword: item.keyword,
-          monthlyPcQcCnt: item.monthly_pc_qc_cnt,
-          monthlyMobileQcCnt: item.monthly_mobile_qc_cnt,
-          totalSearchVolume: item.total_search_volume,
-          monthlyAvePcClkCnt: item.monthly_ave_pc_clk_cnt,
-          monthlyAveMobileClkCnt: item.monthly_ave_mobile_clk_cnt,
-          monthlyAvePcCtr: item.monthly_ave_pc_ctr,
-          monthlyAveMobileCtr: item.monthly_ave_mobile_ctr,
-          plAvgDepth: item.pl_avg_depth,
-          compIdx: item.comp_idx,
-          blogCount: item.blog_count,
-          cafeCount: item.cafe_count,
-          webCount: item.web_count,
-          newsCount: item.news_count,
-          totalDocCount: item.total_doc_count,
-          goldenScore: item.golden_score,
-          tags: item.tags,
-          notes: item.notes || undefined,
-          isFavorite: item.is_favorite,
-          createdAt: item.created_at,
-          updatedAt: item.updated_at,
-          lastCheckedAt: item.last_checked_at || undefined,
-        }));
-
-        // 클라이언트사이드 필터링 적용
-        const filteredKeywords = allKeywords.filter(keyword => {
-          // 검색어 필터
-          if (filters.searchTerm && !keyword.keyword.toLowerCase().includes(filters.searchTerm.toLowerCase())) {
-            return false;
-          }
-          
-          // 황금점수 범위
-          const goldenScore = keyword.goldenScore ?? 0;
-          if (goldenScore < filters.goldenScoreRange[0] || goldenScore > filters.goldenScoreRange[1]) {
-            return false;
-          }
-          
-          // 경쟁도
-          const compIdx = keyword.compIdx ?? '중간';
-          if (!filters.competitionLevels.includes(compIdx)) {
-            return false;
-          }
-          
-          // 검색량 범위
-          const totalSearchVolume = keyword.totalSearchVolume ?? 0;
-          if (totalSearchVolume < filters.searchVolumeMin || totalSearchVolume > filters.searchVolumeMax) {
-            return false;
-          }
-          
-          // 문서수 최대값
-          const totalDocCount = keyword.totalDocCount ?? 0;
-          if (totalDocCount > filters.docCountMax) {
-            return false;
-          }
-          
-          // 카페 문서수 범위
-          const cafeCount = keyword.cafeCount ?? 0;
-          if (cafeCount < filters.cafeCountMin || cafeCount > filters.cafeCountMax) {
-            return false;
-          }
-          
-          // 블로그 문서수 범위
-          const blogCount = keyword.blogCount ?? 0;
-          if (blogCount < filters.blogCountMin || blogCount > filters.blogCountMax) {
-            return false;
-          }
-          
-          // 웹 문서수 범위
-          const webCount = keyword.webCount ?? 0;
-          if (webCount < filters.webCountMin || webCount > filters.webCountMax) {
-            return false;
-          }
-          
-          // 뉴스 문서수 범위
-          const newsCount = keyword.newsCount ?? 0;
-          if (newsCount < filters.newsCountMin || newsCount > filters.newsCountMax) {
-            return false;
-          }
-          
-          // 문서수 0 표시 옵션
-          if (!filters.showZeroDocCount && totalDocCount === 0) {
-            return false;
-          }
-          
-          // 날짜 범위
-          const createdAt = new Date(keyword.createdAt);
-          if (createdAt < filters.dateRange[0] || createdAt > filters.dateRange[1]) {
-            return false;
-          }
-          
-          // 태그 필터
-          if (filters.tags.length > 0) {
-            const hasMatchingTag = filters.tags.some(tag => keyword.tags.includes(tag));
-            if (!hasMatchingTag) {
-              return false;
-            }
-          }
-          
-          return true;
-        });
-
-        // 클라이언트사이드 정렬 적용
-        const sortedKeywords = [...filteredKeywords].sort((a, b) => {
-          if (sortField === 'cafe_count') {
-            // 카페문서수 오름차순(1순위) + 총검색수 내림차순(2순위)
-            const cafeA = a.cafeCount ?? 0;
-            const cafeB = b.cafeCount ?? 0;
-            if (cafeA !== cafeB) {
-              return cafeA - cafeB; // 오름차순
-            }
-            // 카페문서수가 같으면 총검색수로 정렬
-            const totalA = a.totalSearchVolume ?? 0;
-            const totalB = b.totalSearchVolume ?? 0;
-            return totalB - totalA; // 내림차순
-          } else {
-            // 다른 필드 정렬
-            const aValue = a[sortField as keyof Keyword] as number;
-            const bValue = b[sortField as keyof Keyword] as number;
-            if (sortDirection === 'asc') {
-              return (aValue ?? 0) - (bValue ?? 0);
-            } else {
-              return (bValue ?? 0) - (aValue ?? 0);
-            }
-          }
-        });
-
-        // 페이지네이션 적용
-        const offset = (page - 1) * size;
-        const paginatedKeywords = sortedKeywords.slice(offset, offset + size);
-
-        setKeywords(paginatedKeywords as Keyword[]);
-        setTotalCount(sortedKeywords.length); // 필터링된 전체 개수 (페이지네이션용)
-        setLastUpdateTime(new Date());
-        
-        // 자동 수집을 위한 시드키워드 설정 (상위 3개)
-        if (paginatedKeywords.length > 0) {
-          setSeedKeywords(paginatedKeywords.slice(0, 3).map(k => k.keyword));
-        }
-        
-        console.log(`키워드 조회 완료: ${paginatedKeywords.length}개 (필터링된 총 ${sortedKeywords.length}개, 전체 ${totalCount || allKeywords.length}개)`);
-        console.log(`페이지네이션 정보: 현재페이지=${page}, 페이지크기=${size}, 총페이지수=${Math.ceil(sortedKeywords.length / size)}`);
-      } else {
-        console.log('데이터가 없습니다.');
-        setKeywords([] as Keyword[]);
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.error || '키워드 조회에 실패했습니다.');
       }
+
+      const { keywords: paginatedKeywords, totalCount: filteredTotalCount, totalCountInDB } = result.data;
+
+      setKeywords(paginatedKeywords as Keyword[]);
+      setTotalCount(filteredTotalCount); // 필터링된 전체 개수 (페이지네이션용)
+      setLastUpdateTime(new Date());
+      
+      // 자동 수집을 위한 시드키워드 설정 (상위 3개)
+      if (paginatedKeywords.length > 0) {
+        setSeedKeywords(paginatedKeywords.slice(0, 3).map(k => k.keyword));
+      }
+      
+      console.log(`키워드 조회 완료: ${paginatedKeywords.length}개 (필터링된 총 ${filteredTotalCount}개, 전체 ${totalCountInDB}개)`);
+      console.log(`페이지네이션 정보: 현재페이지=${page}, 페이지크기=${size}, 총페이지수=${Math.ceil(filteredTotalCount / size)}`);
     } catch (error) {
       console.error('키워드 조회 오류:', error);
       setError(error instanceof Error ? error.message : '키워드를 불러오는 중 오류가 발생했습니다.');
