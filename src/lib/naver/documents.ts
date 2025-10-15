@@ -1,4 +1,5 @@
 import { DocumentCounts } from '@/types/keyword';
+import { openApiKeyPool, OpenApiKeyConfig } from './openapi-key-pool';
 
 /**
  * 네이버 오픈 API 응답 타입
@@ -17,13 +18,14 @@ export interface NaverSearchResponse {
 }
 
 /**
- * 지수 백오프 재시도 함수
+ * 지수 백오프 재시도 함수 (API 키 풀 사용)
  * 4xx → 사용자 입력 검증, 429/500 → 지수백오프 (300ms → 600ms → 1200ms)
  */
 export async function fetchWithRetry(
   url: string, 
   headers: Record<string, string>, 
-  retries = 3
+  retries = 3,
+  apiKey?: OpenApiKeyConfig
 ): Promise<NaverSearchResponse> {
   for (let i = 0; i < retries; i++) {
     try {
@@ -64,40 +66,53 @@ export async function fetchWithRetry(
 }
 
     /**
-     * 단일 서비스 문서수 조회
+     * 단일 서비스 문서수 조회 (API 키 풀 사용)
      * 네이버 오픈 API: https://openapi.naver.com/v1/search/{service}.json
      */
     async function fetchServiceCount(
       service: 'blog' | 'cafearticle' | 'webkr' | 'news',
-      keyword: string
+      keyword: string,
+      apiKey?: OpenApiKeyConfig
     ): Promise<number> {
+      // API 키 풀에서 사용 가능한 키 가져오기
+      const key = apiKey || openApiKeyPool.getAvailableKey();
+      
+      if (!key) {
+        console.error('사용 가능한 네이버 오픈 API 키가 없습니다');
+        return 0;
+      }
+      
       const headers = {
-        'X-Naver-Client-Id': process.env.NAVER_CLIENT_ID!,
-        'X-Naver-Client-Secret': process.env.NAVER_CLIENT_SECRET!,
+        'X-Naver-Client-Id': key.clientId,
+        'X-Naver-Client-Secret': key.clientSecret,
       };
       
       const baseUrl = process.env.NAVER_OPENAPI_BASE_URL || 'https://openapi.naver.com';
       const encodedKeyword = encodeURIComponent(keyword);
       const url = `${baseUrl}/v1/search/${service}.json?query=${encodedKeyword}&display=1`;
       
-      console.log(`네이버 오픈 API 요청: ${service}`, {
+      console.log(`🔑 네이버 오픈 API 요청: ${service} (키: ${key.name})`, {
         url,
         keyword,
         encodedKeyword,
         baseUrl,
-        environmentVars: {
-          NAVER_CLIENT_ID: process.env.NAVER_CLIENT_ID ? '설정됨' : '미설정',
-          NAVER_CLIENT_SECRET: process.env.NAVER_CLIENT_SECRET ? '설정됨' : '미설정',
-          NAVER_OPENAPI_BASE_URL: process.env.NAVER_OPENAPI_BASE_URL || '미설정',
-        },
+        requestCount: key.requestCount,
       });
       
       try {
-        const data = await fetchWithRetry(url, headers);
+        const data = await fetchWithRetry(url, headers, 3, key);
         console.log(`${service} 응답:`, { total: data.total, keyword });
+        
+        // 성공적으로 사용 완료 처리
+        openApiKeyPool.markKeyUsed(key, true);
+        
         return data.total || 0;
       } catch (error) {
         console.error(`Failed to fetch ${service} count for "${keyword}":`, error);
+        
+        // 실패로 사용 완료 처리
+        openApiKeyPool.markKeyUsed(key, false);
+        
         return 0;
       }
     }

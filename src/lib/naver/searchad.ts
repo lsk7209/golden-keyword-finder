@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { apiKeyPool, ApiKeyConfig } from './api-key-pool';
 
 /**
  * 네이버 검색광고 API 서명 생성
@@ -18,20 +19,44 @@ export function generateSignature(
 }
 
 /**
- * 네이버 검색광고 API 요청 헤더 생성
+ * 네이버 검색광고 API 요청 헤더 생성 (API 키 풀 사용)
  */
-export function getSearchAdHeaders(method: string, uri: string) {
+export function getSearchAdHeaders(method: string, uri: string, apiKey?: ApiKeyConfig) {
   const timestamp = Date.now().toString();
   
-  // URI 인코딩 확인
-  const encodedUri = encodeURIComponent(uri);
-  console.log('서명 생성 정보:', {
+  // API 키 풀에서 사용 가능한 키 가져오기
+  const key = apiKey || apiKeyPool.getAvailableKey();
+  
+  if (!key) {
+    throw new Error('사용 가능한 API 키가 없습니다');
+  }
+  
+  console.log(`🔑 API 키 "${key.name}" 사용 중:`, {
     timestamp,
     method,
     uri,
-    encodedUri,
-    secret: process.env.SEARCHAD_SECRET ? '설정됨' : '미설정',
+    requestCount: key.requestCount,
   });
+  
+  return {
+    'X-Timestamp': timestamp,
+    'X-API-KEY': key.apiKey,
+    'X-Customer': key.customerId,
+    'X-Signature': generateSignature(
+      timestamp,
+      method,
+      uri,
+      key.secret
+    ),
+    'Content-Type': 'application/json; charset=UTF-8',
+  };
+}
+
+/**
+ * 레거시 호환성을 위한 기존 함수 (단일 API 키 사용)
+ */
+export function getSearchAdHeadersLegacy(method: string, uri: string) {
+  const timestamp = Date.now().toString();
   
   return {
     'X-Timestamp': timestamp,
@@ -40,7 +65,7 @@ export function getSearchAdHeaders(method: string, uri: string) {
     'X-Signature': generateSignature(
       timestamp,
       method,
-      uri, // 원본 URI 사용 (인코딩하지 않음)
+      uri,
       process.env.SEARCHAD_SECRET!
     ),
     'Content-Type': 'application/json; charset=UTF-8',
