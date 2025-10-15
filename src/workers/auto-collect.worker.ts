@@ -51,7 +51,7 @@ class AutoCollectWorker {
 
     this.sendMessage('LOG', `🚀 자동 수집 시작 - 목표: ${targetCount}개, 초기 시드키워드: ${seedKeywords.join(', ')}`);
 
-    // 기존 키워드들을 데이터베이스에서 가져오기
+    // 기존 키워드들을 데이터베이스에서 가져오기 (선택사항)
     try {
       this.sendMessage('LOG', '📊 기존 키워드 데이터 로딩 중...');
       
@@ -70,13 +70,13 @@ class AutoCollectWorker {
         this.sendMessage('LOG', `🌱 사용 가능한 시드키워드: ${existingKeywordSet.size}개 (기존) + ${seedKeywords.length}개 (초기) = ${this.allCollectedKeywords.size}개`);
       } else {
         this.sendMessage('LOG', '⚠️ 기존 키워드 로드 실패, 초기 시드키워드만 사용');
-        // 실패 시에도 초기 시드키워드만 사용된 것으로 표시
-        this.usedAsSeedKeywords = new Set(seedKeywords);
+        // 실패 시에는 아무것도 사용된 것으로 표시하지 않음 (초기 시드키워드도 사용 가능)
+        this.usedAsSeedKeywords = new Set();
       }
     } catch {
       this.sendMessage('LOG', '⚠️ 기존 키워드 로드 중 오류, 초기 시드키워드만 사용');
-      // 오류 시에도 초기 시드키워드만 사용된 것으로 표시
-      this.usedAsSeedKeywords = new Set(seedKeywords);
+      // 오류 시에는 아무것도 사용된 것으로 표시하지 않음 (초기 시드키워드도 사용 가능)
+      this.usedAsSeedKeywords = new Set();
     }
 
     // 자동 수집 루프 시작
@@ -107,10 +107,11 @@ class AutoCollectWorker {
             return;
           }
           
-          // 사용된 키워드 중 일부를 다시 사용 가능하게 만들기 (마지막 10개 제외)
+          // 사용된 키워드 중 일부를 다시 사용 가능하게 만들기
           const usedArray = Array.from(this.usedAsSeedKeywords);
-          if (usedArray.length > 10) {
-            const toReuse = usedArray.slice(0, -10);
+          if (usedArray.length > 0) {
+            // 마지막 5개를 제외하고 나머지를 다시 사용 가능하게 설정
+            const toReuse = usedArray.slice(0, Math.max(0, usedArray.length - 5));
             toReuse.forEach(keyword => this.usedAsSeedKeywords.delete(keyword));
             this.sendMessage('LOG', `🔄 이전 시드키워드 ${toReuse.length}개를 다시 사용 가능하게 설정`);
             continue;
