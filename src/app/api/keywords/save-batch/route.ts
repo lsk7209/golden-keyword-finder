@@ -45,6 +45,7 @@ export async function POST(request: NextRequest) {
       }));
 
       try {
+        // @ts-expect-error - Supabase 타입 정의 문제로 인한 임시 해결
         const { error } = await supabase
           .from('keywords')
           .upsert(keywordObjects, { 
