@@ -68,7 +68,15 @@ export class ApiKeyPool {
       SEARCHAD_API_KEY_2: process.env.SEARCHAD_API_KEY_2 ? '설정됨' : '미설정',
       SEARCHAD_SECRET_2: process.env.SEARCHAD_SECRET_2 ? '설정됨' : '미설정',
       SEARCHAD_CUSTOMER_ID_2: process.env.SEARCHAD_CUSTOMER_ID_2 ? '설정됨' : '미설정',
+      SEARCHAD_API_KEY_3: process.env.SEARCHAD_API_KEY_3 ? '설정됨' : '미설정',
+      SEARCHAD_SECRET_3: process.env.SEARCHAD_SECRET_3 ? '설정됨' : '미설정',
+      SEARCHAD_CUSTOMER_ID_3: process.env.SEARCHAD_CUSTOMER_ID_3 ? '설정됨' : '미설정',
     });
+
+    // 키가 없으면 경고
+    if (this.keys.length === 0) {
+      console.warn('⚠️ API 키가 설정되지 않았습니다. Vercel 환경 변수를 확인해주세요.');
+    }
   }
 
   /**
