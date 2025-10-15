@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, memo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,7 +10,7 @@ interface SimpleAutoCollectProps {
   seedKeywords: string[];
 }
 
-export function SimpleAutoCollect({ seedKeywords }: SimpleAutoCollectProps) {
+export const SimpleAutoCollect = memo(function SimpleAutoCollect({ seedKeywords }: SimpleAutoCollectProps) {
   const [targetInput, setTargetInput] = useState<number>(100);
   const { 
     isRunning, 
@@ -24,17 +24,17 @@ export function SimpleAutoCollect({ seedKeywords }: SimpleAutoCollectProps) {
     stopAutoCollect 
   } = useAutoCollect();
 
-  const handleStart = () => {
+  const handleStart = useCallback(() => {
     if (targetInput < 10) {
       alert('최소 10개 이상 설정해주세요.');
       return;
     }
     startAutoCollect(seedKeywords, targetInput);
-  };
+  }, [targetInput, seedKeywords, startAutoCollect]);
 
-  const handleStop = () => {
+  const handleStop = useCallback(() => {
     stopAutoCollect();
-  };
+  }, [stopAutoCollect]);
 
   const progress = targetCount > 0 ? (currentCount / targetCount) * 100 : 0;
 
@@ -162,4 +162,4 @@ export function SimpleAutoCollect({ seedKeywords }: SimpleAutoCollectProps) {
       </CardContent>
     </Card>
   );
-}
+});

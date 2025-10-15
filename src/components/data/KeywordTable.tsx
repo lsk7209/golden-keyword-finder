@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { Keyword } from '@/types/keyword';
 import { useKeywordStore } from '@/store/keyword-store';
 import { formatNumber, formatDate, getCompetitionColor } from '@/lib/utils';
@@ -14,7 +14,7 @@ interface KeywordTableProps {
   onRefresh: () => void;
 }
 
-export function KeywordTable({ keywords, isLoading, onRefresh }: KeywordTableProps) {
+export const KeywordTable = memo(function KeywordTable({ keywords, isLoading, onRefresh }: KeywordTableProps) {
   const { selectedIds, toggleSelection, selectAll, clearSelection } = useKeywordStore();
   const [sortField, setSortField] = useState<string>('createdAt');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
@@ -243,4 +243,4 @@ export function KeywordTable({ keywords, isLoading, onRefresh }: KeywordTablePro
       </div>
     </div>
   );
-}
+});
