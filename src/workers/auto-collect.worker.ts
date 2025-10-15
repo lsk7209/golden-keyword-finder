@@ -11,7 +11,7 @@ interface AutoCollectMessage {
 
 interface AutoCollectResponse {
   type: 'PROGRESS' | 'LOG' | 'COMPLETE' | 'ERROR';
-  data: any;
+  data: unknown;
 }
 
 class AutoCollectWorker {
@@ -70,7 +70,7 @@ class AutoCollectWorker {
       } else {
         this.sendMessage('LOG', '⚠️ 기존 키워드 로드 실패, 초기 시드키워드만 사용');
       }
-    } catch (error) {
+    } catch {
       this.sendMessage('LOG', '⚠️ 기존 키워드 로드 중 오류, 초기 시드키워드만 사용');
     }
 
@@ -175,7 +175,7 @@ class AutoCollectWorker {
     this.sendMessage('LOG', '⏹️ 자동 수집 중지됨');
   }
 
-  private sendMessage(type: AutoCollectResponse['type'], data: any) {
+  private sendMessage(type: AutoCollectResponse['type'], data: unknown) {
     self.postMessage({ type, data });
   }
 }
