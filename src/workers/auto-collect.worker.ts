@@ -45,7 +45,7 @@ class AutoCollectWorker {
 
     this.isRunning = true;
     this.allCollectedKeywords = new Set(seedKeywords);
-    this.usedAsSeedKeywords = new Set(seedKeywords);
+    this.usedAsSeedKeywords = new Set(); // 초기에는 아무것도 사용된 것으로 표시하지 않음
     this.currentCount = seedKeywords.length;
     this.targetCount = targetCount;
 
@@ -63,15 +63,20 @@ class AutoCollectWorker {
         
         // 기존 키워드들과 초기 시드키워드들을 합치기
         this.allCollectedKeywords = new Set([...existingKeywordSet, ...seedKeywords]);
+        // 초기 시드키워드만 사용된 것으로 표시 (기존 키워드들은 새로운 시드로 사용 가능)
         this.usedAsSeedKeywords = new Set(seedKeywords);
         
         this.sendMessage('LOG', `📊 기존 키워드 ${existingKeywordSet.size}개 로드됨`);
         this.sendMessage('LOG', `🌱 사용 가능한 시드키워드: ${existingKeywordSet.size}개 (기존) + ${seedKeywords.length}개 (초기) = ${this.allCollectedKeywords.size}개`);
       } else {
         this.sendMessage('LOG', '⚠️ 기존 키워드 로드 실패, 초기 시드키워드만 사용');
+        // 실패 시에도 초기 시드키워드만 사용된 것으로 표시
+        this.usedAsSeedKeywords = new Set(seedKeywords);
       }
     } catch {
       this.sendMessage('LOG', '⚠️ 기존 키워드 로드 중 오류, 초기 시드키워드만 사용');
+      // 오류 시에도 초기 시드키워드만 사용된 것으로 표시
+      this.usedAsSeedKeywords = new Set(seedKeywords);
     }
 
     // 자동 수집 루프 시작
@@ -79,6 +84,9 @@ class AutoCollectWorker {
   }
 
   private async collectLoop() {
+    let consecutiveFailures = 0;
+    const maxConsecutiveFailures = 5;
+
     while (this.isRunning && this.currentCount < this.targetCount) {
       try {
         // 사용 가능한 시드키워드 선택
@@ -91,6 +99,23 @@ class AutoCollectWorker {
         if (availableForSeed.length === 0) {
           this.sendMessage('LOG', '❌ 더 이상 사용할 수 있는 시드키워드가 없습니다.');
           this.sendMessage('LOG', `📊 디버그 정보: 전체=${this.allCollectedKeywords.size}, 사용됨=${this.usedAsSeedKeywords.size}`);
+          
+          // 연속 실패가 너무 많으면 중지
+          if (consecutiveFailures >= maxConsecutiveFailures) {
+            this.sendMessage('LOG', `⏹️ 연속 실패 ${consecutiveFailures}회로 인한 자동 수집 중지`);
+            this.stopAutoCollect();
+            return;
+          }
+          
+          // 사용된 키워드 중 일부를 다시 사용 가능하게 만들기 (마지막 10개 제외)
+          const usedArray = Array.from(this.usedAsSeedKeywords);
+          if (usedArray.length > 10) {
+            const toReuse = usedArray.slice(0, -10);
+            toReuse.forEach(keyword => this.usedAsSeedKeywords.delete(keyword));
+            this.sendMessage('LOG', `🔄 이전 시드키워드 ${toReuse.length}개를 다시 사용 가능하게 설정`);
+            continue;
+          }
+          
           this.stopAutoCollect();
           return;
         }
@@ -141,6 +166,9 @@ class AutoCollectWorker {
           this.currentCount = this.allCollectedKeywords.size;
           this.sendMessage('LOG', `✅ 새로운 키워드 ${newKeywords.length}개 추가됨 (총 ${this.currentCount}개)`);
           
+          // 성공 시 연속 실패 카운터 리셋
+          consecutiveFailures = 0;
+          
           // 진행률 업데이트
           this.sendMessage('PROGRESS', {
             current: this.currentCount,
@@ -149,6 +177,7 @@ class AutoCollectWorker {
           });
         } else {
           this.sendMessage('LOG', '⚠️ 새로운 키워드가 없습니다.');
+          consecutiveFailures++;
         }
 
         // API 호출 간격 (1초 대기)
@@ -156,6 +185,8 @@ class AutoCollectWorker {
 
       } catch (error) {
         this.sendMessage('LOG', `❌ 오류 발생: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
+        consecutiveFailures++;
+        
         // 오류 발생 시 잠시 대기 후 계속
         await new Promise(resolve => setTimeout(resolve, 2000));
       }
