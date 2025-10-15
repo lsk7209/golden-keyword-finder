@@ -6,7 +6,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-export async function DELETE(request: NextRequest) {
+export async function DELETE() {
   try {
     console.log('🗑️ 모든 키워드 삭제 요청 시작');
 

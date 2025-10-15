@@ -24,8 +24,7 @@ export interface NaverSearchResponse {
 export async function fetchWithRetry(
   url: string, 
   headers: Record<string, string>, 
-  retries = 3,
-  apiKey?: OpenApiKeyConfig
+  retries = 3
 ): Promise<NaverSearchResponse> {
   for (let i = 0; i < retries; i++) {
     try {
@@ -100,7 +99,7 @@ export async function fetchWithRetry(
       });
       
       try {
-        const data = await fetchWithRetry(url, headers, 3, key);
+        const data = await fetchWithRetry(url, headers, 3);
         console.log(`${service} 응답:`, { total: data.total, keyword });
         
         // 성공적으로 사용 완료 처리

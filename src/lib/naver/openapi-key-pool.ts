@@ -51,7 +51,9 @@ export class OpenApiKeyPool {
     this.keys = keyConfigs
       .filter(config => config.clientId && config.clientSecret)
       .map(config => ({
-        ...config,
+        name: config.name,
+        clientId: config.clientId!,
+        clientSecret: config.clientSecret!,
         requestCount: 0,
         errorCount: 0,
       }));

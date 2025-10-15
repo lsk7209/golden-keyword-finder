@@ -50,7 +50,10 @@ export class ApiKeyPool {
     this.keys = keyConfigs
       .filter(config => config.apiKey && config.secret && config.customerId)
       .map(config => ({
-        ...config,
+        name: config.name,
+        apiKey: config.apiKey!,
+        secret: config.secret!,
+        customerId: config.customerId!,
         requestCount: 0,
         errorCount: 0,
       }));

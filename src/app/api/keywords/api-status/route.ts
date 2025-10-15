@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { apiKeyPool } from '@/lib/naver/api-key-pool';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const status = apiKeyPool.getStatus();
     
