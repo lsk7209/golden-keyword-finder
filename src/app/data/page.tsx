@@ -205,7 +205,7 @@ export default function DataPage() {
         const paginatedKeywords = sortedKeywords.slice(offset, offset + size);
 
         setKeywords(paginatedKeywords as Keyword[]);
-        setTotalCount(sortedKeywords.length); // 필터링된 전체 개수
+        setTotalCount(sortedKeywords.length); // 필터링된 전체 개수 (페이지네이션용)
         setLastUpdateTime(new Date());
         
         // 자동 수집을 위한 시드키워드 설정 (상위 3개)
@@ -214,6 +214,7 @@ export default function DataPage() {
         }
         
         console.log(`키워드 조회 완료: ${paginatedKeywords.length}개 (필터링된 총 ${sortedKeywords.length}개, 전체 ${totalCount || allKeywords.length}개)`);
+        console.log(`페이지네이션 정보: 현재페이지=${page}, 페이지크기=${size}, 총페이지수=${Math.ceil(sortedKeywords.length / size)}`);
       } else {
         console.log('데이터가 없습니다.');
         setKeywords([] as Keyword[]);
